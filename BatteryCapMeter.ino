@@ -5,11 +5,13 @@
 // #define THRESHOLD_UP_HIGH 4200  // Pragul superior de tensiune (4.2V)
 #define THRESHOLD_UP_LOW 4190  // Pragul inferior de tensiune incarcare (4.19V)
 #define RELAYPIN 3
+#define HISTPERIOD 3000
 
 Adafruit_SSD1306 display(128, 64);
 INA219 ina(INA219_MAX_16V, 0x40);
 
 bool relay_state = 0;
+uint32_t hist_time_elapse = 0;
 
 //Pin pin = (Pin){ &PORTB, PB1 };
 //Btn btn;
@@ -136,10 +138,12 @@ ISR(INT0_vect) {
 
 bool hystereis_relay_control(uint16_t volt, int16_t curr) {
   // if (relay_state && (volt > THRESHOLD_UP_HIGH || volt < THRESHOLD_DW_LOW)) {                                     //0v'-'-'-'l------l-------------l----l'-'-'-'..
-  if (relay_state && (volt > (THRESHOLD_UP_LOW + 10 + curr / 10) || volt < (THRESHOLD_DW_HIGH - 100 - curr / 4))) {  //0v'-'-'-'l------l-------------l----l'-'-'-'..
-    relay_state = false;                                                                                             //
-  } else if (!relay_state && volt < THRESHOLD_UP_LOW && volt > THRESHOLD_DW_HIGH) {                                  //0v-------l------l'-'-'-'-'-'-'l----l------..
+  if (hist_time_elapse > HISTPERIOD && relay_state && (volt > (THRESHOLD_UP_LOW + 10 + curr / 10) || volt < (THRESHOLD_DW_HIGH - 100 - curr / 4))) {  //0v'-'-'-'l------l-------------l----l'-'-'-'..
+    relay_state = false;                                                                                                                             //
+    hist_time_elapse = 0;
+  } else if (hist_time_elapse > HISTPERIOD && !relay_state && volt < THRESHOLD_UP_LOW && volt > THRESHOLD_DW_HIGH) {  //0v-------l------l'-'-'-'-'-'-'l----l------..
     relay_state = true;                                                                                              //
+    hist_time_elapse = 0;
   }
   return relay_state;
 }
@@ -162,6 +166,7 @@ void initExtInterrupt() {
 // Timer1 Compare Match A Interrupt Service Routine
 ISR(TIMER1_COMPA_vect) {
   millisTime++;
+  hist_time_elapse++;
   //PORTB ^= (1 << PB5);
 
   softTimerUpdate(&myTimer);
