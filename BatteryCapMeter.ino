@@ -8,7 +8,8 @@
 #define HISTPERIOD 3000
 
 Adafruit_SSD1306 display(128, 64);
-INA219 ina(INA219_MAX_16V, 0x40);
+INA226 ina((uint8_t)0x40);
+
 
 bool relay_state = 0;
 uint32_t hist_time_elapse = 0;
@@ -48,18 +49,18 @@ void setup() {
   display.clearDisplay();
 
   if (ina.begin()) {
-    Serial.println(F("INA219 connected!"));
+    Serial.println(F("INA226 connected!"));
   } else {
-    Serial.println(F("INA219 not found!"));
+    Serial.println(F("INA226 not found!"));
     errFunc();
   }
 
   Serial.print(F("Calibration value: "));
   Serial.println(ina.getCalibration());
-  ina.setCalibVolt(1.0059f);                                // Set calibration voltage
+  //ina.setCalibVolt(1.0059f);                                // Set calibration voltage
   ina.adjCalibration(27);                                   // Adjust calibration
-  ina.setResolution(INA219_VBUS, INA219_RES_12BIT_X128);    // Set bus voltage resolution
-  ina.setResolution(INA219_VSHUNT, INA219_RES_12BIT_X128);  // Set shunt voltage resolution
+  ina.setSampleTime(INA226_VBUS, INA226_AVG_X1024);    // Set bus voltage resolution
+  ina.setSampleTime(INA226_VSHUNT, INA226_AVG_X1024);  // Set shunt voltage resolution
 
   // Initialize the LED pin as an output
   pinMode(RED_LED, OUTPUT);
@@ -138,7 +139,7 @@ ISR(INT0_vect) {
 
 bool hystereis_relay_control(uint16_t volt, int16_t curr) {
   // if (relay_state && (volt > THRESHOLD_UP_HIGH || volt < THRESHOLD_DW_LOW)) {                                                                      //0v'-'-'-'l------l-------------l----l'-'-'-'..
-  if (hist_time_elapse > HISTPERIOD && relay_state && (volt > (THRESHOLD_UP_LOW + 10 + curr / 10) || volt < (THRESHOLD_DW_HIGH - 100 - curr / 4))) {  //0v'-'-'-'l------l-------------l----l'-'-'-'..
+  if (hist_time_elapse > HISTPERIOD && relay_state && (volt > (int32_t)(THRESHOLD_UP_LOW + 10 + curr / 10) || volt < (int32_t)(THRESHOLD_DW_HIGH - 100 - curr / 4))) {  //0v'-'-'-'l------l-------------l----l'-'-'-'..
     relay_state = false;                                                                                                                              //
     hist_time_elapse = 0;                                                                                                                             //
   } else if (hist_time_elapse > HISTPERIOD && !relay_state && volt < THRESHOLD_UP_LOW && volt > THRESHOLD_DW_HIGH) {                                  //0v-------l------l'-'-'-'-'-'-'l----l------..

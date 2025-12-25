@@ -5,7 +5,8 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-#include "INA219.h"
+// #include "INA219.h"
+#include "INA226ADC.h"
 #include "softwareTimer.h"
 //#include "btn.h"
 
@@ -13,7 +14,7 @@
 #define SCREEN_ADDRESS 0x3C  // OLED display I2C address
 
 extern Adafruit_SSD1306 display;
-extern INA219 ina;
+// extern INA226 ina;
 
 uint32_t prevLoopMillis = 0;
 volatile float capacity = 0;
