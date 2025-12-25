@@ -16,23 +16,23 @@
 extern Adafruit_SSD1306 display;
 // extern INA226 ina;
 
-uint32_t prevLoopMillis = 0;
+uint32_t prev_loop_millis = 0;
 volatile float capacity = 0;
-uint32_t prevActiveCurrMillis = 0;
-uint32_t totalActiveCurrMillis = 0;
+uint32_t prev_active_curr_millis = 0;
+uint32_t total_active_curr_millis = 0;
 volatile uint16_t voltage = 0;
 volatile int16_t current = 0;
-volatile int16_t absCurrent = 0;
-volatile uint32_t millisTime = 0;
-uint32_t loopTime = 0;
-uint32_t lastTimeExt0 = 0;
-volatile bool readInaFlag = 0;
-uint32_t prevTimeTest = 0;
-uint32_t timeTest = 0;
+volatile int16_t abs_current = 0;
+volatile uint32_t millis_time = 0;
+uint32_t loop_time = 0;
+uint32_t last_time_ext0 = 0;
+volatile bool read_ina_flag = 0;
+uint32_t prev_time_test = 0;
+uint32_t time_test = 0;
 
-extern SoftTimer displayShowTimer;
-extern SoftTimer myTimer;
-extern SoftTimer readInaTimer;
+extern SoftTimer_t display_show_timer;
+extern SoftTimer_t my_timer;
+extern SoftTimer_t read_ina_timer;
 
 void setup();
 void loop();

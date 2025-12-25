@@ -16,9 +16,9 @@ uint32_t hist_time_elapse = 0;
 // Pin pin = (Pin){ &PORTB, PB1 };
 // Btn btn;
 
-SoftTimer displayShowTimer;
-SoftTimer myTimer;
-SoftTimer readInaTimer;
+SoftTimer display_show_timer;
+SoftTimer my_timer;
+SoftTimer read_ina_timer;
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 void setup()
@@ -27,14 +27,14 @@ void setup()
   initTimer1();
 
   // Initialize the software timers
-  softTimerInit(&myTimer, 100, NULL);             // 100 ms interval
-  softTimerInit(&displayShowTimer, 300, NULL);    // 300 ms interval
-  softTimerInit(&readInaTimer, 100, computeData); // 100 ms interval
+  soft_timer_init(&my_timer, 100, NULL);             // 100 ms interval
+  soft_timer_init(&display_show_timer, 300, NULL);    // 300 ms interval
+  soft_timer_init(&read_ina_timer, 100, computeData); // 100 ms interval
 
   // Start the software timers
-  softTimerStart(&myTimer);
-  softTimerStart(&displayShowTimer);
-  softTimerStart(&readInaTimer);
+  soft_timer_start(&my_timer);
+  soft_timer_start(&display_show_timer);
+  soft_timer_start(&read_ina_timer);
 
   // initBtn(&btn, &pin);
 
@@ -77,9 +77,9 @@ void setup()
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 void loop()
 {
-  uint32_t actMillisTime = millisT();
+  uint32_t actmillis_time = millisT();
 
-  if (timeElapsedFlag(&readInaTimer))
+  if (time_elapsed_flag(&read_ina_timer))
   {
     /* to do INA226 reading in C style
 
@@ -96,42 +96,42 @@ float voltage = ina226_get_voltage(&ina);
 */
     voltage = ina.getMiliVoltage();
     current = ina.getMiliCurrent();
-    absCurrent = abs(current);
+    abs_current = abs(current);
   }
-  hystereis_relay_control(voltage, absCurrent);
+  hystereis_relay_control(voltage, abs_current);
   digitalWrite(RELAYPIN, relay_state);
 
   // cli();
-  //  loopTime = actMillisTime - prevLoopMillis;
-  //  if (loopTime > 0) {
-  //    prevLoopMillis = actMillisTime;
-  //    float tempCapacity = (float)absCurrent * ((float)loopTime / 3600000);
+  //  loop_time = actmillis_time - prev_loop_millis;
+  //  if (loop_time > 0) {
+  //    prev_loop_millis = actmillis_time;
+  //    float tempCapacity = (float)abs_current * ((float)loop_time / 3600000);
   //    capacity += tempCapacity;
   //  }
   // sei();
 
-  if (timeElapsedFlag(&displayShowTimer))
+  if (time_elapsed_flag(&display_show_timer))
   {
     // toggleLed();
-    prevTimeTest = actMillisTime;
+    prev_time_test = actmillis_time;
     displayWrite();
-    timeTest = actMillisTime - prevTimeTest;
+    time_test = actmillis_time - prev_time_test;
     // toggleLed();
   }
 
-  if (absCurrent > 1)
+  if (abs_current > 1)
   {
-    totalActiveCurrMillis += actMillisTime - prevActiveCurrMillis;
+    total_active_curr_millis += actmillis_time - prev_active_curr_millis;
   }
-  prevActiveCurrMillis = actMillisTime;
+  prev_active_curr_millis = actmillis_time;
 }
 
 void computeData()
 {
-  uint32_t actMillisTime = millisT();
-  loopTime = actMillisTime - prevLoopMillis;
-  prevLoopMillis = actMillisTime;
-  float tempCapacity = (float)absCurrent * ((float)loopTime / 3600000);
+  uint32_t actmillis_time = millisT();
+  loop_time = actmillis_time - prev_loop_millis;
+  prev_loop_millis = actmillis_time;
+  float tempCapacity = (float)abs_current * ((float)loop_time / 3600000);
   capacity += tempCapacity;
 }
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -144,16 +144,16 @@ void toggleLed()
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 uint32_t millisT()
 {
-  return millisTime;
+  return millis_time;
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 // Interrupt Service Routine for INT0
 ISR(INT0_vect)
 {
-  if (millisTime - lastTimeExt0 > 100)
+  if (millis_time - last_time_ext0 > 100)
   {
-    lastTimeExt0 = millisTime;
+    last_time_ext0 = millis_time;
     PORTB ^= (1 << PB5); // Toggle PB5
     relay_state = true;
   }
@@ -196,13 +196,13 @@ void initExtInterrupt()
 // Timer1 Compare Match A Interrupt Service Routine
 ISR(TIMER1_COMPA_vect)
 {
-  millisTime++;
+  millis_time++;
   hist_time_elapse++;
   // PORTB ^= (1 << PB5);
 
-  softTimerUpdate(&myTimer);
-  softTimerUpdate(&displayShowTimer);
-  softTimerUpdate(&readInaTimer);
+  soft_timer_update(&my_timer);
+  soft_timer_update(&display_show_timer);
+  soft_timer_update(&read_ina_timer);
 
   // cccvCompute();
 }
@@ -251,7 +251,7 @@ void displayWrite()
   display.setTextSize(1); // Normal 1:1 pixel scale
   display.setCursor(0, 32);
   display.print("Act:");
-  display.print(totalActiveCurrMillis / 1000);
+  display.print(total_active_curr_millis / 1000);
   display.println("s");
 
   display.setCursor(60, 32);
@@ -261,17 +261,17 @@ void displayWrite()
 
   display.setCursor(0, 40);
   display.print("All:");
-  display.print(millisTime / 1000);
+  display.print(millis_time / 1000);
   display.println("s");
 
   display.setCursor(0, 48);
   display.print("Lt:");
-  display.print(loopTime);
+  display.print(loop_time);
   display.println("ms");
 
   display.setCursor(60, 48);
   display.print("Tt:");
-  display.print(timeTest);
+  display.print(time_test);
   display.println("ms");
 
   display.display();
