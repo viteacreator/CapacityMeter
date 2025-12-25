@@ -137,12 +137,12 @@ ISR(INT0_vect) {
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 bool hystereis_relay_control(uint16_t volt, int16_t curr) {
-  // if (relay_state && (volt > THRESHOLD_UP_HIGH || volt < THRESHOLD_DW_LOW)) {                                     //0v'-'-'-'l------l-------------l----l'-'-'-'..
+  // if (relay_state && (volt > THRESHOLD_UP_HIGH || volt < THRESHOLD_DW_LOW)) {                                                                      //0v'-'-'-'l------l-------------l----l'-'-'-'..
   if (hist_time_elapse > HISTPERIOD && relay_state && (volt > (THRESHOLD_UP_LOW + 10 + curr / 10) || volt < (THRESHOLD_DW_HIGH - 100 - curr / 4))) {  //0v'-'-'-'l------l-------------l----l'-'-'-'..
-    relay_state = false;                                                                                                                             //
-    hist_time_elapse = 0;
-  } else if (hist_time_elapse > HISTPERIOD && !relay_state && volt < THRESHOLD_UP_LOW && volt > THRESHOLD_DW_HIGH) {  //0v-------l------l'-'-'-'-'-'-'l----l------..
-    relay_state = true;                                                                                              //
+    relay_state = false;                                                                                                                              //
+    hist_time_elapse = 0;                                                                                                                             //
+  } else if (hist_time_elapse > HISTPERIOD && !relay_state && volt < THRESHOLD_UP_LOW && volt > THRESHOLD_DW_HIGH) {                                  //0v-------l------l'-'-'-'-'-'-'l----l------..
+    relay_state = true;                                                                                                                               //
     hist_time_elapse = 0;
   }
   return relay_state;
