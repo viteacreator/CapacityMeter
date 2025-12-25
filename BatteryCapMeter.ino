@@ -1,66 +1,69 @@
 #include "main.h"
 
-#define THRESHOLD_DW_HIGH 3000  // Upper discharge voltage threshold (3.0V)
+#define THRESHOLD_DW_HIGH 3000 // Upper discharge voltage threshold (3.0V)
 // #define THRESHOLD_DW_LOW 2800   // Lower voltage threshold (2.8V)
 // #define THRESHOLD_UP_HIGH 4200  // Upper voltage threshold (4.2V)
-#define THRESHOLD_UP_LOW 4190  // Lower charging voltage threshold (4.19V)
+#define THRESHOLD_UP_LOW 4190 // Lower charging voltage threshold (4.19V)
 #define RELAYPIN 3
 #define HISTPERIOD 3000
 
 Adafruit_SSD1306 display(128, 64);
 INA226 ina((uint8_t)0x40);
 
-
 bool relay_state = 0;
 uint32_t hist_time_elapse = 0;
 
-//Pin pin = (Pin){ &PORTB, PB1 };
-//Btn btn;
+// Pin pin = (Pin){ &PORTB, PB1 };
+// Btn btn;
 
 SoftTimer displayShowTimer;
 SoftTimer myTimer;
 SoftTimer readInaTimer;
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
-void setup() {
+void setup()
+{
   initExtInterrupt();
   initTimer1();
 
   // Initialize the software timers
-  softTimerInit(&myTimer, 100, NULL);              // 100 ms interval
-  softTimerInit(&displayShowTimer, 300, NULL);     // 300 ms interval
-  softTimerInit(&readInaTimer, 100, computeData);  // 100 ms interval
+  softTimerInit(&myTimer, 100, NULL);             // 100 ms interval
+  softTimerInit(&displayShowTimer, 300, NULL);    // 300 ms interval
+  softTimerInit(&readInaTimer, 100, computeData); // 100 ms interval
 
   // Start the software timers
   softTimerStart(&myTimer);
   softTimerStart(&displayShowTimer);
   softTimerStart(&readInaTimer);
 
-
-  //initBtn(&btn, &pin);
+  // initBtn(&btn, &pin);
 
   Serial.begin(9600);
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
+  {
     Serial.println(F("SSD1306 allocation failed"));
     errFunc();
   }
   // Clear the display buffer
   display.clearDisplay();
 
-  if (ina.begin()) {
+  if (ina.begin())
+  {
     Serial.println(F("INA226 connected!"));
-  } else {
+  }
+  else
+  {
     Serial.println(F("INA226 not found!"));
     errFunc();
   }
 
   Serial.print(F("Calibration value: "));
   Serial.println(ina.getCalibration());
-  //ina.setCalibVolt(1.0059f);                                // Set calibration voltage
-  ina.adjCalibration(27);                                   // Adjust calibration
-  ina.setSampleTime(INA226_VBUS, INA226_AVG_X1024);    // Set bus voltage resolution
-  ina.setSampleTime(INA226_VSHUNT, INA226_AVG_X1024);  // Set shunt voltage resolution
+  // ina.setCalibVolt(1.0059f);                                // Set calibration voltage
+  ina.adjCalibration(27);                             // Adjust calibration
+  ina.setSampleTime(INA226_VBUS, INA226_AVG_X1024);   // Set bus voltage resolution
+  ina.setSampleTime(INA226_VSHUNT, INA226_AVG_X1024); // Set shunt voltage resolution
 
   // Initialize the LED pin as an output
   pinMode(RED_LED, OUTPUT);
@@ -72,10 +75,25 @@ void setup() {
   DDRD |= (1 << PD3);
 }
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
-void loop() {
+void loop()
+{
   uint32_t actMillisTime = millisT();
 
-  if (timeElapsedFlag(&readInaTimer)) {
+  if (timeElapsedFlag(&readInaTimer))
+  {
+    /* to do INA226 reading in C style
+
+// Instead of C++:
+// INA226 ina(0.1f, 0.8f, 0x40);
+// ina.begin();
+// float voltage = ina.getVoltage();
+
+// Now in C:
+INA226_t ina;
+ina226_init(&ina, 0.1f, 0.8f, 0x40);
+ina226_begin(&ina);
+float voltage = ina226_get_voltage(&ina);
+*/
     voltage = ina.getMiliVoltage();
     current = ina.getMiliCurrent();
     absCurrent = abs(current);
@@ -83,16 +101,17 @@ void loop() {
   hystereis_relay_control(voltage, absCurrent);
   digitalWrite(RELAYPIN, relay_state);
 
-  //cli();
-  // loopTime = actMillisTime - prevLoopMillis;
-  // if (loopTime > 0) {
-  //   prevLoopMillis = actMillisTime;
-  //   float tempCapacity = (float)absCurrent * ((float)loopTime / 3600000);
-  //   capacity += tempCapacity;
-  // }
-  //sei();
+  // cli();
+  //  loopTime = actMillisTime - prevLoopMillis;
+  //  if (loopTime > 0) {
+  //    prevLoopMillis = actMillisTime;
+  //    float tempCapacity = (float)absCurrent * ((float)loopTime / 3600000);
+  //    capacity += tempCapacity;
+  //  }
+  // sei();
 
-  if (timeElapsedFlag(&displayShowTimer)) {
+  if (timeElapsedFlag(&displayShowTimer))
+  {
     // toggleLed();
     prevTimeTest = actMillisTime;
     displayWrite();
@@ -100,14 +119,15 @@ void loop() {
     // toggleLed();
   }
 
-
-  if (absCurrent > 1) {
+  if (absCurrent > 1)
+  {
     totalActiveCurrMillis += actMillisTime - prevActiveCurrMillis;
   }
   prevActiveCurrMillis = actMillisTime;
 }
 
-void computeData() {
+void computeData()
+{
   uint32_t actMillisTime = millisT();
   loopTime = actMillisTime - prevLoopMillis;
   prevLoopMillis = actMillisTime;
@@ -115,42 +135,51 @@ void computeData() {
   capacity += tempCapacity;
 }
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
-void toggleLed() {
+void toggleLed()
+{
   PORTB ^= (1 << PB5);
   // toggleLed();
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
-uint32_t millisT() {
+uint32_t millisT()
+{
   return millisTime;
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 // Interrupt Service Routine for INT0
-ISR(INT0_vect) {
-  if (millisTime - lastTimeExt0 > 100) {
+ISR(INT0_vect)
+{
+  if (millisTime - lastTimeExt0 > 100)
+  {
     lastTimeExt0 = millisTime;
-    PORTB ^= (1 << PB5);  // Toggle PB5
+    PORTB ^= (1 << PB5); // Toggle PB5
     relay_state = true;
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 
-bool hystereis_relay_control(uint16_t volt, int16_t curr) {
+bool hystereis_relay_control(uint16_t volt, int16_t curr)
+{
   // if (relay_state && (volt > THRESHOLD_UP_HIGH || volt < THRESHOLD_DW_LOW)) {                                                                      //0v'-'-'-'l------l-------------l----l'-'-'-'..
-  if (hist_time_elapse > HISTPERIOD && relay_state && (volt > (int32_t)(THRESHOLD_UP_LOW + 10 + curr / 10) || volt < (int32_t)(THRESHOLD_DW_HIGH - 100 - curr / 4))) {  //0v'-'-'-'l------l-------------l----l'-'-'-'..
-    relay_state = false;                                                                                                                              //
-    hist_time_elapse = 0;                                                                                                                             //
-  } else if (hist_time_elapse > HISTPERIOD && !relay_state && volt < THRESHOLD_UP_LOW && volt > THRESHOLD_DW_HIGH) {                                  //0v-------l------l'-'-'-'-'-'-'l----l------..
-    relay_state = true;                                                                                                                               //
+  if (hist_time_elapse > HISTPERIOD && relay_state && (volt > (int32_t)(THRESHOLD_UP_LOW + 10 + curr / 10) || volt < (int32_t)(THRESHOLD_DW_HIGH - 100 - curr / 4)))
+  {                       // 0v'-'-'-'l------l-------------l----l'-'-'-'..
+    relay_state = false;  //
+    hist_time_elapse = 0; //
+  }
+  else if (hist_time_elapse > HISTPERIOD && !relay_state && volt < THRESHOLD_UP_LOW && volt > THRESHOLD_DW_HIGH)
+  {                     // 0v-------l------l'-'-'-'-'-'-'l----l------..
+    relay_state = true; //
     hist_time_elapse = 0;
   }
   return relay_state;
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
-void initExtInterrupt() {
+void initExtInterrupt()
+{
   // Configure INT0 (PD2) as an input
   DDRD &= ~(1 << PD2);
   // Enable pull-up resistor on PD2 (optional)
@@ -165,10 +194,11 @@ void initExtInterrupt() {
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 // Timer1 Compare Match A Interrupt Service Routine
-ISR(TIMER1_COMPA_vect) {
+ISR(TIMER1_COMPA_vect)
+{
   millisTime++;
   hist_time_elapse++;
-  //PORTB ^= (1 << PB5);
+  // PORTB ^= (1 << PB5);
 
   softTimerUpdate(&myTimer);
   softTimerUpdate(&displayShowTimer);
@@ -178,7 +208,8 @@ ISR(TIMER1_COMPA_vect) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
-void initTimer1() {
+void initTimer1()
+{
   // Ensure Timer1 is in a known state
   TCCR1A = 0;
   TCCR1B = 0;
@@ -196,24 +227,28 @@ void initTimer1() {
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
-void displayWrite() {
+void displayWrite()
+{
   display.clearDisplay();
-  display.setTextSize(2);               // Normal 1:1 pixel scale
-  display.setTextColor(SSD1306_WHITE);  // Draw white text
+  display.setTextSize(2);              // Normal 1:1 pixel scale
+  display.setTextColor(SSD1306_WHITE); // Draw white text
 
-  display.setCursor(22, 0);  // Start at top-left corner
+  display.setCursor(22, 0); // Start at top-left corner
   display.print(voltage);
   display.println("mV");
 
-  if (current < 0) {
+  if (current < 0)
+  {
     display.setCursor(10, 16);
-  } else {
+  }
+  else
+  {
     display.setCursor(22, 16);
   }
   display.print(current);
   display.println("mA");
 
-  display.setTextSize(1);  // Normal 1:1 pixel scale
+  display.setTextSize(1); // Normal 1:1 pixel scale
   display.setCursor(0, 32);
   display.print("Act:");
   display.print(totalActiveCurrMillis / 1000);
@@ -243,8 +278,10 @@ void displayWrite() {
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
-void errFunc() {
-  for (int i = 0; i < 10; i++) {
+void errFunc()
+{
+  for (int i = 0; i < 10; i++)
+  {
     digitalWrite(RED_LED, LOW);
     delay(250);
     digitalWrite(RED_LED, HIGH);
