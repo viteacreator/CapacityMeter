@@ -1,9 +1,9 @@
 #include "main.h"
 
-#define THRESHOLD_DW_HIGH 3000  // Pragul superior de tensiune descarcare (3.0V)
-// #define THRESHOLD_DW_LOW 2800   // Pragul inferior de tensiune (2.8V)
-// #define THRESHOLD_UP_HIGH 4200  // Pragul superior de tensiune (4.2V)
-#define THRESHOLD_UP_LOW 4190  // Pragul inferior de tensiune incarcare (4.19V)
+#define THRESHOLD_DW_HIGH 3000  // Upper discharge voltage threshold (3.0V)
+// #define THRESHOLD_DW_LOW 2800   // Lower voltage threshold (2.8V)
+// #define THRESHOLD_UP_HIGH 4200  // Upper voltage threshold (4.2V)
+#define THRESHOLD_UP_LOW 4190  // Lower charging voltage threshold (4.19V)
 #define RELAYPIN 3
 #define HISTPERIOD 3000
 
