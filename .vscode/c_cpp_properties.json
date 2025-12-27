@@ -8,11 +8,11 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/include",
-                "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/src",
-                "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/.pio/libdeps/nanoatmega328new/Adafruit SSD1306",
-                "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/.pio/libdeps/nanoatmega328new/Adafruit GFX Library",
-                "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/.pio/libdeps/nanoatmega328new/Adafruit BusIO",
+                "c:/Git_repo_s/CapacityMeter/include",
+                "c:/Git_repo_s/CapacityMeter/src",
+                "c:/Git_repo_s/CapacityMeter/.pio/libdeps/nanoatmega328new/Adafruit SSD1306",
+                "c:/Git_repo_s/CapacityMeter/.pio/libdeps/nanoatmega328new/Adafruit GFX Library",
+                "c:/Git_repo_s/CapacityMeter/.pio/libdeps/nanoatmega328new/Adafruit BusIO",
                 "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                 "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
                 "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/cores/arduino",
@@ -25,11 +25,11 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/include",
-                    "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/src",
-                    "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/.pio/libdeps/nanoatmega328new/Adafruit SSD1306",
-                    "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/.pio/libdeps/nanoatmega328new/Adafruit GFX Library",
-                    "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/.pio/libdeps/nanoatmega328new/Adafruit BusIO",
+                    "c:/Git_repo_s/CapacityMeter/include",
+                    "c:/Git_repo_s/CapacityMeter/src",
+                    "c:/Git_repo_s/CapacityMeter/.pio/libdeps/nanoatmega328new/Adafruit SSD1306",
+                    "c:/Git_repo_s/CapacityMeter/.pio/libdeps/nanoatmega328new/Adafruit GFX Library",
+                    "c:/Git_repo_s/CapacityMeter/.pio/libdeps/nanoatmega328new/Adafruit BusIO",
                     "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                     "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
                     "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/cores/arduino",
