@@ -8,7 +8,8 @@
 #define HISTPERIOD 3000
 
 Adafruit_SSD1306 display(128, 64);
-INA226 ina((uint8_t)0x40);
+// INA226 ina((uint8_t)0x40);
+INA226_t ina;
 
 bool relay_state = 0;
 uint32_t hist_time_elapse = 0;
@@ -16,9 +17,9 @@ uint32_t hist_time_elapse = 0;
 // Pin pin = (Pin){ &PORTB, PB1 };
 // Btn btn;
 
-SoftTimer display_show_timer;
-SoftTimer my_timer;
-SoftTimer read_ina_timer;
+SoftTimer_t display_show_timer;
+SoftTimer_t my_timer;
+SoftTimer_t read_ina_timer;
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------
 void setup()
@@ -27,7 +28,7 @@ void setup()
   initTimer1();
 
   // Initialize the software timers
-  soft_timer_init(&my_timer, 100, NULL);             // 100 ms interval
+  soft_timer_init(&my_timer, 100, NULL);              // 100 ms interval
   soft_timer_init(&display_show_timer, 300, NULL);    // 300 ms interval
   soft_timer_init(&read_ina_timer, 100, computeData); // 100 ms interval
 
@@ -37,6 +38,9 @@ void setup()
   soft_timer_start(&read_ina_timer);
 
   // initBtn(&btn, &pin);
+
+  ina226_init(&ina, 0.1f, 3.2f, 0x40); // Initialize with shunt resistance, max current, I2C address
+  ina226_bind_i2c(&ina, &I2C_WIRE_ARDUINO); // Attach I2C backend
 
   Serial.begin(9600);
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
@@ -48,7 +52,7 @@ void setup()
   // Clear the display buffer
   display.clearDisplay();
 
-  if (ina.begin())
+  if (ina226_begin(&ina))
   {
     Serial.println(F("INA226 connected!"));
   }
@@ -59,12 +63,11 @@ void setup()
   }
 
   Serial.print(F("Calibration value: "));
-  Serial.println(ina.getCalibration());
+  Serial.println(ina226_get_calibration(&ina));
   // ina.setCalibVolt(1.0059f);                                // Set calibration voltage
-  ina.adjCalibration(27);                             // Adjust calibration
-  ina.setSampleTime(INA226_VBUS, INA226_AVG_X1024);   // Set bus voltage resolution
-  ina.setSampleTime(INA226_VSHUNT, INA226_AVG_X1024); // Set shunt voltage resolution
-
+  ina226_adj_calibration(&ina, 27);                             // Adjust calibration
+  ina226_set_sample_time(&ina, INA226_VBUS, INA226_AVG_X1024);   // Set bus voltage resolution
+  ina226_set_sample_time(&ina, INA226_VSHUNT, INA226_AVG_X1024); // Set shunt voltage resolution
   // Initialize the LED pin as an output
   pinMode(RED_LED, OUTPUT);
   pinMode(7, INPUT_PULLUP);
@@ -94,8 +97,8 @@ ina226_init(&ina, 0.1f, 0.8f, 0x40);
 ina226_begin(&ina);
 float voltage = ina226_get_voltage(&ina);
 */
-    voltage = ina.getMiliVoltage();
-    current = ina.getMiliCurrent();
+    voltage = ina226_get_mili_voltage(&ina);
+    current = ina226_get_mili_current(&ina);
     abs_current = abs(current);
   }
   hystereis_relay_control(voltage, abs_current);

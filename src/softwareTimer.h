@@ -5,6 +5,10 @@
 #include <avr/interrupt.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Enumeration for timer states */
 typedef enum
 {
@@ -61,5 +65,9 @@ void soft_timer_start(SoftTimer_t *timer);
  * @param timer - Pointer to timer structure
  */
 void soft_timer_stop(SoftTimer_t *timer);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* SOFT_TIMER_H */

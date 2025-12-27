@@ -1,14 +1,60 @@
+//
+// !!! WARNING !!! AUTO-GENERATED FILE!
+// PLEASE DO NOT MODIFY IT AND USE "platformio.ini":
+// https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags
+//
 {
     "configurations": [
         {
-            "name": "Win32",
+            "name": "PlatformIO",
             "includePath": [
-                "${workspaceFolder}/**"
+                "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/include",
+                "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/src",
+                "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/.pio/libdeps/nanoatmega328new/Adafruit SSD1306",
+                "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/.pio/libdeps/nanoatmega328new/Adafruit GFX Library",
+                "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/.pio/libdeps/nanoatmega328new/Adafruit BusIO",
+                "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/cores/arduino",
+                "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs",
+                "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                ""
             ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/include",
+                    "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/src",
+                    "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/.pio/libdeps/nanoatmega328new/Adafruit SSD1306",
+                    "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/.pio/libdeps/nanoatmega328new/Adafruit GFX Library",
+                    "c:/Users/VicPro/Documents/PlatformIO/Projects/251225-195001-nanoatmega328new/.pio/libdeps/nanoatmega328new/Adafruit BusIO",
+                    "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                    "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                    "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/cores/arduino",
+                    "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs",
+                    "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                    "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                    "C:/Users/VicPro/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                    ""
+                ]
+            },
             "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
+                "PLATFORMIO=60118",
+                "ARDUINO_AVR_NANO",
+                "F_CPU=16000000L",
+                "ARDUINO_ARCH_AVR",
+                "ARDUINO=10808",
+                "__AVR_ATmega328P__",
+                ""
+            ],
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++11",
+            "compilerPath": "C:/Users/VicPro/.platformio/packages/toolchain-atmelavr/bin/avr-gcc.exe",
+            "compilerArgs": [
+                "-mmcu=atmega328p",
+                ""
             ]
         }
     ],

@@ -29,7 +29,8 @@ void soft_timer_init(SoftTimer_t *timer, uint32_t interval_ms, void (*callback)(
 void soft_timer_update(SoftTimer_t *timer)
 {
 
-    if (timer->state != TIMER_START){
+    if (timer->state != TIMER_START)
+    {
         return; /* If the timer is not running, exit */
     }
     timer->elapsed_time++; /* Increment the elapsed time */
@@ -39,7 +40,7 @@ void soft_timer_update(SoftTimer_t *timer)
         timer->elapsed_time = 0;         /* Reset the elapsed time */
         timer->elapsed_time_flag = true; /* Set the elapsed time flag */
 
-        if (timer->callback != NULL)
+        if (timer->callback)//or use timer->callback != NULL
         { /* If a callback function is set, call it */
             timer->callback();
         }

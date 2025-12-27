@@ -59,15 +59,15 @@
 // public:
 //   // constructor
 //   INA219(const float r_shunt = 0.1f, const float i_max = 3.2f, const bool v_max = INA219_MAX_32V, const uint8_t address = 0x40)  // v_max = 0x01(32 V), 0x00(16 V)
-//     : _r_shunt(r_shunt), _i_max(i_max), _v_max(v_max), _iic_address(address) {}
+//     : _r_shunt(r_shunt), _i_max(i_max), _v_max(v_max), _i2c_address(address) {}
 
 //   // constructor
 //   INA219(const bool v_max, const uint8_t address)
-//     : _r_shunt(0.1f), _i_max(3.2f), _v_max(v_max), _iic_address(address) {}
+//     : _r_shunt(0.1f), _i_max(3.2f), _v_max(v_max), _i2c_address(address) {}
 
 //   // // constructor
 //   // INA219(const uint8_t address)
-//   //   : _r_shunt(0.1f), _i_max(3.2f), _v_max(INA219_MAX_32V), _iic_address(address) {}
+//   //   : _r_shunt(0.1f), _i_max(3.2f), _v_max(INA219_MAX_32V), _i2c_address(address) {}
 
 //   float _calibVal = 1.0f;
 
@@ -153,7 +153,7 @@
 //   }
 
 // //private:
-//   const uint8_t _iic_address = 0x00;  // I2C bus address
+//   const uint8_t _i2c_address = 0x00;  // I2C bus address
 //   const float _r_shunt = 0.0;         // Shunt resistance
 //   const float _i_max = 0.0;           // Max expected current
 //   const bool _v_max = 0x00;           // Max expected voltage
@@ -164,7 +164,7 @@
 
 //   // Write 16-bit INA219 register
 //   void writeRegister(uint8_t address, uint16_t data) {
-//     Wire.beginTransmission(_iic_address);  // Start transmission
+//     Wire.beginTransmission(_i2c_address);  // Start transmission
 //     Wire.write(address);                   // Send address
 //     Wire.write(highByte(data));            // Send high byte
 //     Wire.write(lowByte(data));             // Send low byte
@@ -173,16 +173,16 @@
 
 //   // Read 16-bit INA219 register
 //   uint16_t readRegister(uint8_t address) {
-//     Wire.beginTransmission(_iic_address);        // Start transmission
+//     Wire.beginTransmission(_i2c_address);        // Start transmission
 //     Wire.write(address);                         // Send address
 //     Wire.endTransmission();                      // End transmission
-//     Wire.requestFrom(_iic_address, (uint8_t)2);  // Request 2 bytes
+//     Wire.requestFrom(_i2c_address, (uint8_t)2);  // Request 2 bytes
 //     return Wire.read() << 8 | Wire.read();       // Combine and return result
 //   }
 
 //   // Check presence
 //   bool testConnection(void) {
-//     Wire.beginTransmission(_iic_address);  // Start transmission
+//     Wire.beginTransmission(_i2c_address);  // Start transmission
 //     return (bool)!Wire.endTransmission();  // End immediately, invert result
 //   }
 

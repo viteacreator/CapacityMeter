@@ -6,7 +6,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 // #include "INA219.h"
-#include "INA226ADC.h"
+#include "ina_adc.h"
+#include "i2c_wire_arduino.h"
 #include "softwareTimer.h"
 //#include "btn.h"
 
