@@ -22,7 +22,7 @@ extern Adafruit_SSD1306 display;
 // extern INA226 ina;
 
 uint32_t prev_loop_millis = 0;
-float capacity = 0;
+int32_t capacity = 0;
 uint32_t prev_active_curr_millis = 0;
 uint32_t total_active_curr_millis = 0;
 volatile uint16_t voltage = 0;

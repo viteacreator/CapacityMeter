@@ -1,14 +1,19 @@
 #include "menu.h"
 #include <string.h>
+#include <avr/pgmspace.h>
 
-/* Internal structure definition (hidden from users) */
+/**
+ * Internal structure definition (hidden from users)
+ * PGM_P is a typedef for const char* in PROGMEM space (on AVR) and not in RAM
+ * because we want to save RAM on AVR targets.
+ */
 struct Menu
 {
     uint8_t selected;  /* 1..max_items */
     uint8_t max_items; /* includes Back */
 
-    const char *menu_name;
-    const char *item_name[MENU_MAX_ITEMS];
+    PGM_P menu_name;
+    PGM_P item_name[MENU_MAX_ITEMS];
 
     struct Menu *previous_menu;
     struct Menu *sub_menu[MENU_MAX_ITEMS - 1u]; /* submenus only for items excluding "Back" */
@@ -35,7 +40,7 @@ Menu_t *menu_create(void)
 
 /* ---- Internal helpers ---- */
 
-// static void safe_copy_str(char *dst, uint16_t dst_len, const char *src)
+// static void safe_copy_str(char *dst, uint16_t dst_len, const char *src) //..., PGM_P src)
 // {
 //     /* Copies at most dst_len-1 bytes and always NUL-terminates */
 //     if (dst == 0 || dst_len == 0u)
@@ -84,7 +89,7 @@ static uint8_t clamp_wrap_1based(uint8_t value, uint8_t max_items)
 
 menu_status_t menu_init(Menu_t *menu,
                         uint8_t items_without_back,
-                        const char *const item_names[])
+                        PGM_P const item_names[])
 {
     if (menu == 0)
     {
@@ -105,9 +110,11 @@ menu_status_t menu_init(Menu_t *menu,
     }
 
     /* Default name */
-    menu->menu_name = "Menu";
+    // menu->menu_name = "Menu";
+    menu->menu_name = PSTR("Menu"); // PSTR macro places string in PROGMEM
 
-    static const char s_back[] = "Back";
+    // static const char s_back[] = "Back";
+    static const char s_back[] PROGMEM = "Back";// PROGMEM is AVR-specific attribute to store in flash
     /* Copy item names (1..items_without_back) */
     for (uint8_t i = 0; i < items_without_back; i++)
     {
@@ -136,9 +143,10 @@ menu_status_t menu_init(Menu_t *menu,
     return MENU_OK;
 }
 
-void menu_set_name(Menu_t *menu, const char *name)
+void menu_set_name(Menu_t *menu, PGM_P name)
 {
-    if (menu) menu->menu_name = name;
+    if (menu)
+        menu->menu_name = name;
 }
 
 menu_status_t menu_set_submenu(Menu_t *parent, uint8_t item_index_1based, Menu_t *submenu)
@@ -231,7 +239,7 @@ menu_action_t menu_enter_selected(Menu_t *menu)
     return MENU_ACTION_NONE;
 }
 
-const char *menu_get_name(const Menu_t *menu)
+PGM_P menu_get_name(const Menu_t *menu)
 {
     if (menu == 0)
     {
@@ -240,7 +248,7 @@ const char *menu_get_name(const Menu_t *menu)
     return menu->menu_name;
 }
 
-const char *menu_get_item_name(const Menu_t *menu, uint8_t item_index_1based)
+PGM_P menu_get_item_name(const Menu_t *menu, uint8_t item_index_1based)
 {
     if (menu == 0 || menu->max_items == 0u)
     {

@@ -20,7 +20,7 @@ static Menu_t *m_logs_stub;      // Logs stub
 static Menu_t *m_something_stub; // Something else stub
 
 /* Dummy array for menus with 0 items (only Back will exist) */
-static const char * const s_empty[] = { 0 };
+static const char *const s_empty[] = {0};
 
 /* ====== Leaf actions (connect UI -> test engine here) ====== */
 
@@ -138,120 +138,184 @@ void ui_tree_init(void)
 {
     /* ---------- MAIN MENU ---------- */
     {
-        static const char *const items[] = {
-            "Battery simple test",
-            "Battery cycles test",
-            "Res. test (DC/AC)",
-            "View logs files",
-            "Something else"};
+        // static const char *const items[] = {
+        //     "Battery simple test",
+        //     "Battery cycles test",
+        //     "Res. test (DC/AC)",
+        //     "View logs files",
+        //     "Something else"};
+
+        // m_main = menu_create();
+        // (void)menu_init(m_main, 5u, items);
+        // menu_set_name(m_main, "Main menu");
+        static const char STR_MAIN0[] PROGMEM = "Btr simple test";
+        static const char STR_MAIN1[] PROGMEM = "Btr cycles test";
+        static const char STR_MAIN2[] PROGMEM = "Res. test (DC/AC)";
+        static const char STR_MAIN3[] PROGMEM = "View logs files";
+        static const char STR_MAIN4[] PROGMEM = "Something else";
+
+        static PGM_P const MAIN_ITEMS[] = {
+            STR_MAIN0, STR_MAIN1, STR_MAIN2, STR_MAIN3, STR_MAIN4};
 
         m_main = menu_create();
-        (void)menu_init(m_main, 5u, items);
-        menu_set_name(m_main, "Main menu");
+        (void)menu_init(m_main, 5u, MAIN_ITEMS);
+        menu_set_name(m_main, PSTR("Main menu"));
     }
 
     /* ---------- Battery simple test (LIST) ---------- */
     {
-        static const char *const items[] = {
-            "Chg-Disch-Chg",
-            "Discharging",
-            "Charging"};
+        // static const char *const items[] = {
+        //     "Chg-Disch-Chg",
+        //     "Discharging",
+        //     "Charging"};
 
+        // m_batt_simple_list = menu_create();
+        // (void)menu_init(m_batt_simple_list, 3u, items);
+        // menu_set_name(m_batt_simple_list, "Battery simple test");
+        static const char STR_BST0[] PROGMEM = "Chg-Disch-Chg";
+        static const char STR_BST1[] PROGMEM = "Discharging";
+        static const char STR_BST2[] PROGMEM = "Charging";
+        static PGM_P const BST_ITEMS[] = {
+            STR_BST0, STR_BST1, STR_BST2};
         m_batt_simple_list = menu_create();
-        (void)menu_init(m_batt_simple_list, 3u, items);
-        menu_set_name(m_batt_simple_list, "Battery simple test");
+        (void)menu_init(m_batt_simple_list, 3u, BST_ITEMS);
+        menu_set_name(m_batt_simple_list, PSTR("Btr simple test"));        
     }
 
     /* RUN: Chg-Disch-Chg */
     {
-        static const char *const items[] = {
-            "Options",
-            "STOP"};
+        // static const char *const items[] = {
+        //     "Options",
+        //     "STOP"};
 
+        // m_run_cdc = menu_create();
+        // (void)menu_init(m_run_cdc, 2u, items);
+        // menu_set_name(m_run_cdc, "Chg-Disch-Chg");
+        static const char STR_RCDC0[] PROGMEM = "Options";
+        static const char STR_RCDC1[] PROGMEM = "STOP";
+        static PGM_P const RCDC_ITEMS[] = {
+            STR_RCDC0, STR_RCDC1};
         m_run_cdc = menu_create();
-        (void)menu_init(m_run_cdc, 2u, items);
-        menu_set_name(m_run_cdc, "Chg-Disch-Chg");
+        (void)menu_init(m_run_cdc, 2u, RCDC_ITEMS);
+        menu_set_name(m_run_cdc, PSTR("Chg-Disch-Chg"));
     }
 
     /* OPTIONS: Chg-Disch-Chg-Options (Back only) */
     {
         m_opt_cdc = menu_create();
         (void)menu_init(m_opt_cdc, 0u, s_empty);
-        menu_set_name(m_opt_cdc, "Chg-Disch-Chg-Options");
+        // menu_set_name(m_opt_cdc, "Chg-Disch-Chg-Options");
+        menu_set_name(m_opt_cdc, PSTR("Chg-Disch-Chg-Opts"));
     }
 
     /* RUN: Discharging */
     {
-        static const char *const items[] = {
-            "STOP"};
+        // static const char *const items[] = {
+        //     "STOP"};
 
+        // m_run_disch = menu_create();
+        // (void)menu_init(m_run_disch, 1u, items);
+        // menu_set_name(m_run_disch, "Discharging");
+        static const char STR_RD0[] PROGMEM = "STOP";
+        static PGM_P const RD_ITEMS[] = {
+            STR_RD0};
         m_run_disch = menu_create();
-        (void)menu_init(m_run_disch, 1u, items);
-        menu_set_name(m_run_disch, "Discharging");
+        (void)menu_init(m_run_disch, 1u, RD_ITEMS);
+        menu_set_name(m_run_disch, PSTR("Discharging"));
     }
 
     /* RUN: Charging (Finished -> Start) */
     {
-        static const char *const items[] = {
-            "Start"};
+        // static const char *const items[] = {
+        //     "Start"};
 
+        // m_run_chg = menu_create();
+        // (void)menu_init(m_run_chg, 1u, items);
+        // menu_set_name(m_run_chg, "Charging");
+        static const char STR_RC0[] PROGMEM = "Start";
+        static PGM_P const RC_ITEMS[] = {
+            STR_RC0};
         m_run_chg = menu_create();
-        (void)menu_init(m_run_chg, 1u, items);
-        menu_set_name(m_run_chg, "Charging");
+        (void)menu_init(m_run_chg, 1u, RC_ITEMS);
+        menu_set_name(m_run_chg, PSTR("Charging"));
     }
 
     /* ---------- Battery cycles test (RUN) ---------- */
     {
-        static const char *const items[] = {
-            "Options",
-            "STOP"};
+        // static const char *const items[] = {
+        //     "Options",
+        //     "STOP"};
 
+        // m_run_cycles = menu_create();
+        // (void)menu_init(m_run_cycles, 2u, items);
+        // menu_set_name(m_run_cycles, "Battery cycles test");
+        static const char STR_RCYC0[] PROGMEM = "Options";
+        static const char STR_RCYC1[] PROGMEM = "STOP";
+        static PGM_P const RCYC_ITEMS[] = {
+            STR_RCYC0, STR_RCYC1};
         m_run_cycles = menu_create();
-        (void)menu_init(m_run_cycles, 2u, items);
-        menu_set_name(m_run_cycles, "Battery cycles test");
+        (void)menu_init(m_run_cycles, 2u, RCYC_ITEMS);
+        menu_set_name(m_run_cycles, PSTR("Btr cycles test"));
     }
 
     /* OPTIONS: Battery test-Options (Back only) */
     {
         m_opt_cycles = menu_create();
         (void)menu_init(m_opt_cycles, 0u, s_empty);
-        menu_set_name(m_opt_cycles, "Battery test-Options");
+        // menu_set_name(m_opt_cycles, "Battery test-Options");
+        menu_set_name(m_opt_cycles, PSTR("Btr test-Opts"));
     }
 
     /* MODAL: Stop confirm */
     {
-        static const char *const items[] = {
-            "Sure",
-            "Cancel"};
+        // static const char *const items[] = {
+        //     "Sure",
+        //     "Cancel"};
 
+        // m_modal_stop_confirm = menu_create();
+        // (void)menu_init(m_modal_stop_confirm, 2u, items);
+        // menu_set_name(m_modal_stop_confirm, "Stop?");
+        static const char STR_MSC0[] PROGMEM = "Sure";
+        static const char STR_MSC1[] PROGMEM = "Cancel";
+        static PGM_P const MSC_ITEMS[] = {
+            STR_MSC0, STR_MSC1};
         m_modal_stop_confirm = menu_create();
-        (void)menu_init(m_modal_stop_confirm, 2u, items);
-        menu_set_name(m_modal_stop_confirm, "Stop?");
+        (void)menu_init(m_modal_stop_confirm, 2u, MSC_ITEMS);
+        menu_set_name(m_modal_stop_confirm, PSTR("Stop?"));
     }
 
     /* ---------- Resist test (RUN) ---------- */
     {
-        static const char *const items[] = {
-            "AC/DC",
-            "START/STOP"};
+        // static const char *const items[] = {
+        //     "AC/DC",
+        //     "START/STOP"};
 
+        // m_run_resist = menu_create();
+        // (void)menu_init(m_run_resist, 2u, items);
+        // menu_set_name(m_run_resist, "Resist. test (DC/AC)");
+        static const char STR_RRT0[] PROGMEM = "AC/DC";
+        static const char STR_RRT1[] PROGMEM = "START/STOP";
+        static PGM_P const RRT_ITEMS[] = {
+            STR_RRT0, STR_RRT1};
         m_run_resist = menu_create();
-        (void)menu_init(m_run_resist, 2u, items);
-        menu_set_name(m_run_resist, "Resist. test (DC/AC)");
+        (void)menu_init(m_run_resist, 2u, RRT_ITEMS);
+        menu_set_name(m_run_resist, PSTR("Resist. test (DC/AC)"));
     }
 
     /* ---------- Logs stub ---------- */
     {
         m_logs_stub = menu_create();
         (void)menu_init(m_logs_stub, 0u, s_empty);
-        menu_set_name(m_logs_stub, "Logs");
+        // menu_set_name(m_logs_stub, "Logs");
+        menu_set_name(m_logs_stub, PSTR("Logs"));
     }
 
     /* ---------- Something else stub ---------- */
     {
         m_something_stub = menu_create();
         (void)menu_init(m_something_stub, 0u, s_empty);
-        menu_set_name(m_something_stub, "Something else");
+        // menu_set_name(m_something_stub, "Something else");
+        menu_set_name(m_something_stub, PSTR("Something else"));
     }
 
     /* ====== Link the tree (submenus) ====== */

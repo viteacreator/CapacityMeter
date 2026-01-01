@@ -2,6 +2,7 @@
 #define MENU_H
 
 #include <stdint.h>
+#include <avr/pgmspace.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -9,7 +10,7 @@ extern "C" {
 
 /* Public configuration */
 #define MENU_MAX_ITEMS            6u
-#define MENU_MAX_ITEM_NAME_LEN    18u
+#define MENU_MAX_ITEM_NAME_LEN    10u
 
 #ifndef MENU_MAX_MENUS
 #define MENU_MAX_MENUS 8u
@@ -44,11 +45,12 @@ extern Menu_t *g_current_menu;
  * - items_without_back must be <= MENU_MAX_ITEMS - 1
  * - The last selectable item becomes "Back" (index = max_items)
  *
- * The function copies strings into internal storage.
+ * PGM_P is a typedef for const char* in PROGMEM space, not in RAM
+ * because on AVR we want to save RAM.
  */
 menu_status_t menu_init(Menu_t *menu,
                         uint8_t items_without_back,
-                        const char *const item_names[]);
+                        PGM_P const item_names[]);
 
 /**
  * Create a new menu instance (from internal static storage).
@@ -60,7 +62,7 @@ Menu_t *menu_create(void);
  * Set menu title/name (copied safely).
  * You can call this for any menu after menu_init().
  */
-void menu_set_name(Menu_t *menu, const char *name);
+void menu_set_name(Menu_t *menu, PGM_P name);
 
 /**
  * Link a submenu to a parent menu item (1-based index).
@@ -93,8 +95,8 @@ uint8_t menu_prev(Menu_t *menu);
 menu_action_t menu_enter_selected(Menu_t *menu);
 
 /* Getters (read-only pointers to internal storage) */
-const char *menu_get_name(const Menu_t *menu);
-const char *menu_get_item_name(const Menu_t *menu, uint8_t item_index_1based);
+PGM_P menu_get_name(const Menu_t *menu);
+PGM_P menu_get_item_name(const Menu_t *menu, uint8_t item_index_1based);
 
 uint8_t menu_get_max_items(const Menu_t *menu);          /* includes Back */
 uint8_t menu_get_selected(const Menu_t *menu);           /* 1..max_items */

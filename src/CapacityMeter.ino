@@ -10,7 +10,7 @@
 #define BTN_MINUS_PIN 9 // Pin for MINUS button, PB1 (PCINT1)
 // #define BTN_OK_PIN     8 // Pin for OK button, PB0 (PCINT0)
 
-#define BTN_DEBOUNCE_MS 50u // Button debounce time in milliseconds
+#define BTN_DEBOUNCE_MS 100u // Button debounce time in milliseconds
 
 #define THRESHOLD_DW_HIGH 3000 // Upper discharge voltage threshold (3.0V)
 // #define THRESHOLD_DW_LOW 2800   // Lower voltage threshold (2.8V)
@@ -19,7 +19,7 @@
 #define RELAYPIN 3
 #define HISTPERIOD 3000
 
-Adafruit_SSD1306 display(128, 40);
+Adafruit_SSD1306 display(128, 56);
 // INA226 ina((uint8_t)0x40);
 INA226_t ina;
 
@@ -40,7 +40,20 @@ void computeData();
 /* main functions                                                   */
 /*------------------------------------------------------------------*/
 void setup()
-{
+{ 
+  
+  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  // here we have to init the display on its own buffer, not from our ram because it is eating half of the ram
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
+  {
+    Serial.println(F("SSD1306 allocation failed"));
+    errFunc();
+  }
+  // Clear the display buffer
+  display.clearDisplay();
+
+
+
   init_int0_interrupt();
   init_pcint_interrupts();
   initTimer1();
@@ -63,14 +76,6 @@ void setup()
   ui_tree_init(); // Initialize UI tree
 
   Serial.begin(115200);
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
-  {
-    Serial.println(F("SSD1306 allocation failed"));
-    errFunc();
-  }
-  // Clear the display buffer
-  display.clearDisplay();
 
   if (ina226_begin(&ina))
   {
@@ -147,8 +152,9 @@ void computeData()
   uint32_t actmillis_time = millisT();
   loop_time = actmillis_time - prev_loop_millis;
   prev_loop_millis = actmillis_time;
-  float tempCapacity = (float)abs_current * ((float)loop_time / 3600000);
-  capacity += tempCapacity;
+
+  float tempCapacity = (float)abs_current * ((float)loop_time / 3600000); // mAh calculation 
+  capacity += tempCapacity; // accumulate capacity in mAh
 }
 
 bool hystereis_relay_control(uint16_t volt, int16_t curr)
@@ -309,31 +315,59 @@ uint32_t millisT(void)
 /*------------------------------------------------------------------*/
 /* new display write                                                */
 /*------------------------------------------------------------------*/
+static void oled_print_pgm(PGM_P s)
+{
+  char buf[20];
+  if (!s)
+  {
+    display.println(F("NULL"));
+    return;
+  }
+  strncpy_P(buf, s, sizeof(buf) - 1u);
+  buf[sizeof(buf) - 1u] = '\0';
+  display.println(buf);
+}
 static void ui_render_menu(Menu_t *m)
 {
   display.clearDisplay();
   display.setTextSize(1);
 
-  //title
+  // title
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0, 0);
 
-  const char *title = menu_get_name(m);
-  display.println(title ? title : "NULL");
-  display.println("----------------");
+  // const char *title = menu_get_name(m);
+  // display.println(title ? title : "NULL");
+  // display.println("----------------");
+  oled_print_pgm(menu_get_name(m));
 
   uint8_t max = menu_get_max_items(m);
   uint8_t sel = menu_get_selected(m);
 
+  // for (uint8_t i = 1u; i <= max; i++)
+  // {
+  //   if (i == sel)
+  //     display.print("> ");
+  //   else
+  //     display.print("  ");
+
+  //   const char *name = menu_get_item_name(m, i);
+  //   display.println(name ? name : "");
+  // }
   for (uint8_t i = 1u; i <= max; i++)
   {
+    // if (display.print((i == sel)))
     if (i == sel)
-      display.print("> ");
+    {
+      // display.setTextColor(SSD1306_WHITE, SSD1306_BLACK); // Inverted color for selected item
+      display.print(F("> "));
+    }
     else
-      display.print("  ");
-
-    const char *name = menu_get_item_name(m, i);
-    display.println(name ? name : "");
+    {
+      // display.setTextColor(SSD1306_BLACK, SSD1306_WHITE); // Normal color for other items
+      display.print(F("  "));
+    }
+    oled_print_pgm(menu_get_item_name(m, i));
   }
 
   display.display();
@@ -342,55 +376,55 @@ static void ui_render_menu(Menu_t *m)
 /*------------------------------------------------------------------*/
 /* old display write                                                */
 /*------------------------------------------------------------------*/
-void displayWrite()
-{
-  display.clearDisplay();
-  display.setTextSize(2);              // Normal 1:1 pixel scale
-  display.setTextColor(SSD1306_WHITE); // Draw white text
+// void displayWrite()
+// {
+//   display.clearDisplay();
+//   display.setTextSize(2);              // Normal 1:1 pixel scale
+//   display.setTextColor(SSD1306_WHITE); // Draw white text
 
-  display.setCursor(22, 0); // Start at top-left corner
-  display.print(voltage);
-  display.println("mV");
+//   display.setCursor(22, 0); // Start at top-left corner
+//   display.print(voltage);
+//   display.println("mV");
 
-  if (current < 0)
-  {
-    display.setCursor(10, 16);
-  }
-  else
-  {
-    display.setCursor(22, 16);
-  }
-  display.print(current);
-  display.println("mA");
+//   if (current < 0)
+//   {
+//     display.setCursor(10, 16);
+//   }
+//   else
+//   {
+//     display.setCursor(22, 16);
+//   }
+//   display.print(current);
+//   display.println("mA");
 
-  display.setTextSize(1); // Normal 1:1 pixel scale
-  display.setCursor(0, 32);
-  display.print("Act:");
-  display.print(total_active_curr_millis / 1000);
-  display.println("s");
+//   display.setTextSize(1); // Normal 1:1 pixel scale
+//   display.setCursor(0, 32);
+//   display.print("Act:");
+//   display.print(total_active_curr_millis / 1000);
+//   display.println("s");
 
-  display.setCursor(60, 32);
-  display.print("Cap:");
-  display.print((uint16_t)capacity);
-  display.println("mAh");
+//   display.setCursor(60, 32);
+//   display.print("Cap:");
+//   display.print((uint16_t)capacity);
+//   display.println("mAh");
 
-  display.setCursor(0, 40);
-  display.print("All:");
-  display.print(millis_time / 1000);
-  display.println("s");
+//   display.setCursor(0, 40);
+//   display.print("All:");
+//   display.print(millis_time / 1000);
+//   display.println("s");
 
-  display.setCursor(0, 48);
-  display.print("Lt:");
-  display.print(loop_time);
-  display.println("ms");
+//   display.setCursor(0, 48);
+//   display.print("Lt:");
+//   display.print(loop_time);
+//   display.println("ms");
 
-  display.setCursor(60, 48);
-  display.print("Tt:");
-  display.print(time_test);
-  display.println("ms");
+//   display.setCursor(60, 48);
+//   display.print("Tt:");
+//   display.print(time_test);
+//   display.println("ms");
 
-  display.display();
-}
+//   display.display();
+// }
 
 //-----------------------------------------------------------------------------
 void errFunc()
