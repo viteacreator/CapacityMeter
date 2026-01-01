@@ -1,5 +1,17 @@
 #include "main.h"
 
+/* Buttons are INPUT_PULLUP -> pressed = LOW */
+/** todo: its better in future to use:
+ * PD2(PCINT18/INT0), PD4(PCINT20/T0), PB0(PCINT0)
+ * because there is no peripheral on these pins needed in this prj
+ */
+#define BTN_PLUS_PIN 7  // Pin for PLUS button, PD7 (PCINT23)
+#define BTN_OK_PIN 2    // Pin for OK button, PD2 (INT0)
+#define BTN_MINUS_PIN 9 // Pin for MINUS button, PB1 (PCINT1)
+// #define BTN_OK_PIN     8 // Pin for OK button, PB0 (PCINT0)
+
+#define BTN_DEBOUNCE_MS 50u // Button debounce time in milliseconds
+
 #define THRESHOLD_DW_HIGH 3000 // Upper discharge voltage threshold (3.0V)
 // #define THRESHOLD_DW_LOW 2800   // Lower voltage threshold (2.8V)
 // #define THRESHOLD_UP_HIGH 4200  // Upper voltage threshold (4.2V)
@@ -7,7 +19,7 @@
 #define RELAYPIN 3
 #define HISTPERIOD 3000
 
-Adafruit_SSD1306 display(128, 64);
+Adafruit_SSD1306 display(128, 40);
 // INA226 ina((uint8_t)0x40);
 INA226_t ina;
 
@@ -21,28 +33,36 @@ SoftTimer_t display_show_timer;
 SoftTimer_t my_timer;
 SoftTimer_t read_ina_timer;
 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
+static void ui_render_menu(Menu_t *m);
+void computeData();
+
+/*------------------------------------------------------------------*/
+/* main functions                                                   */
+/*------------------------------------------------------------------*/
 void setup()
 {
-  initExtInterrupt();
+  init_int0_interrupt();
+  init_pcint_interrupts();
   initTimer1();
 
   // Initialize the software timers
-  soft_timer_init(&my_timer, 100, NULL);              // 100 ms interval
-  soft_timer_init(&display_show_timer, 300, NULL);    // 300 ms interval
-  soft_timer_init(&read_ina_timer, 100, computeData); // 100 ms interval
-
+  soft_timer_init(&my_timer, 100, NULL);           // 100 ms interval
+  soft_timer_init(&display_show_timer, 300, NULL); // 300 ms interval
+  soft_timer_init(&read_ina_timer, 100, NULL);     // 100 ms interval
   // Start the software timers
   soft_timer_start(&my_timer);
   soft_timer_start(&display_show_timer);
   soft_timer_start(&read_ina_timer);
 
+  // initMenus();
   // initBtn(&btn, &pin);
 
-  ina226_init(&ina, 0.1f, 3.2f, 0x40); // Initialize with shunt resistance, max current, I2C address
+  ina226_init(&ina, 0.1f, 3.2f, 0x40);      // Initialize with shunt resistance, max current, I2C address
   ina226_bind_i2c(&ina, &I2C_WIRE_ARDUINO); // Attach I2C backend
 
-  Serial.begin(9600);
+  ui_tree_init(); // Initialize UI tree
+
+  Serial.begin(115200);
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
   {
@@ -65,38 +85,25 @@ void setup()
   Serial.print(F("Calibration value: "));
   Serial.println(ina226_get_calibration(&ina));
   // ina.setCalibVolt(1.0059f);                                // Set calibration voltage
-  ina226_adj_calibration(&ina, 27);                             // Adjust calibration
+  ina226_adj_calibration(&ina, 27);                              // Adjust calibration
   ina226_set_sample_time(&ina, INA226_VBUS, INA226_AVG_X1024);   // Set bus voltage resolution
   ina226_set_sample_time(&ina, INA226_VSHUNT, INA226_AVG_X1024); // Set shunt voltage resolution
   // Initialize the LED pin as an output
   pinMode(RED_LED, OUTPUT);
-  pinMode(7, INPUT_PULLUP);
-  pinMode(8, INPUT_PULLUP);
-  pinMode(9, INPUT_PULLUP);
+  // pinMode(7, INPUT_PULLUP);
+  // pinMode(8, INPUT_PULLUP);
+  // pinMode(9, INPUT_PULLUP);
   // Set PB5 (Pin 13 on Arduino Uno) as output
   DDRB |= (1 << PB5);
-  DDRD |= (1 << PD3);
+  DDRD |= (1 << PD3); // for relay
 }
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 void loop()
 {
   uint32_t actmillis_time = millisT();
 
   if (time_elapsed_flag(&read_ina_timer))
   {
-    /* to do INA226 reading in C style
-
-// Instead of C++:
-// INA226 ina(0.1f, 0.8f, 0x40);
-// ina.begin();
-// float voltage = ina.getVoltage();
-
-// Now in C:
-INA226_t ina;
-ina226_init(&ina, 0.1f, 0.8f, 0x40);
-ina226_begin(&ina);
-float voltage = ina226_get_voltage(&ina);
-*/
     voltage = ina226_get_mili_voltage(&ina);
     current = ina226_get_mili_current(&ina);
     abs_current = abs(current);
@@ -117,9 +124,15 @@ float voltage = ina226_get_voltage(&ina);
   {
     // toggleLed();
     prev_time_test = actmillis_time;
-    displayWrite();
+    // displayWrite();
+    ui_render_menu(g_current_menu);
     time_test = actmillis_time - prev_time_test;
     // toggleLed();
+  }
+
+  if (time_elapsed_flag(&read_ina_timer))
+  {
+    computeData();
   }
 
   if (abs_current > 1)
@@ -137,32 +150,6 @@ void computeData()
   float tempCapacity = (float)abs_current * ((float)loop_time / 3600000);
   capacity += tempCapacity;
 }
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
-void toggleLed()
-{
-  PORTB ^= (1 << PB5);
-  // toggleLed();
-}
-
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
-uint32_t millisT()
-{
-  return millis_time;
-}
-
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
-// Interrupt Service Routine for INT0
-ISR(INT0_vect)
-{
-  if (millis_time - last_time_ext0 > 100)
-  {
-    last_time_ext0 = millis_time;
-    PORTB ^= (1 << PB5); // Toggle PB5
-    relay_state = true;
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 bool hystereis_relay_control(uint16_t volt, int16_t curr)
 {
@@ -180,12 +167,15 @@ bool hystereis_relay_control(uint16_t volt, int16_t curr)
   return relay_state;
 }
 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
-void initExtInterrupt()
+/*------------------------------------------------------------------*/
+/* isr and timers                                                   */
+/*------------------------------------------------------------------*/
+
+void init_int0_interrupt()
 {
-  // Configure INT0 (PD2) as an input
+  // Configure PD2 (INT0) Ard pin 2 on arduino, as an input
   DDRD &= ~(1 << PD2);
-  // Enable pull-up resistor on PD2 (optional)
+  // Enable pull-up resistor on PD2
   PORTD |= (1 << PD2);
   // Set the interrupt sense control to trigger on a falling edge
   EICRA |= (1 << ISC01) | (0 << ISC00);
@@ -194,24 +184,88 @@ void initExtInterrupt()
   // Enable global interrupts
   sei();
 }
-
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
-// Timer1 Compare Match A Interrupt Service Routine
-ISR(TIMER1_COMPA_vect)
+// Interrupt Service Routine for INT0 from external pin (PD2)
+ISR(INT0_vect)
 {
-  millis_time++;
-  hist_time_elapse++;
-  // PORTB ^= (1 << PB5);
+  if ((millis_time - last_time_btn_ok) < BTN_DEBOUNCE_MS)
+    return;
+  if (PIND & (1 << PD2))
+    return;
 
-  soft_timer_update(&my_timer);
-  soft_timer_update(&display_show_timer);
-  soft_timer_update(&read_ina_timer);
+  last_time_btn_ok = millis_time;
+  PORTB ^= (1 << PB5); // Toggle PB5, Ard pin 13
+  relay_state = true;
 
-  // cccvCompute();
+  /* in future need to use a g_ok_event flag to not overload isr */
+  ui_on_button(UI_BTN_OK); // Handle OK button press for display
+}
+//-----------------------------------------------------------------------------
+void init_pcint_interrupts()
+{
+  // Configure PB1 (PCINT1), and PD7 (PCINT23) as inputs (without PB0 because it is conn to other pin now)
+  DDRB &= ~(1 << PB1);
+  DDRD &= ~(1 << PD7);
+  // Enable pull-up resistor on PB1 and PD7
+  PORTB |= (1 << PB1);
+  PORTD |= (1 << PD7);
+  // Enable pin change interrupt for PCINT1 (PB1), PCINT23 (PD7)
+  PCICR |= (1 << PCIE0) | (1 << PCIE2); // Enable PCINT0x and PCINT2x groups for PB1 and PD7
+  // Enable PCINT interrupt
+  PCMSK0 |= (1 << PCINT1);  // Enable PCINT1 for PB1
+  PCMSK2 |= (1 << PCINT23); // Enable PCINT23 for PD7
+  // Enable global interrupts
+  sei();
 }
 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
-void initTimer1()
+ISR(PCINT0_vect)
+{
+  static uint8_t prev_pinb = 0xFF;               /* previous sampled PINB state */
+  uint8_t pinb = PINB;                           /* current PINB state */
+  uint8_t changed = (uint8_t)(pinb ^ prev_pinb); /* changed bits */
+
+  /* Debounce time gate */
+  if ((millis_time - last_time_btn_dw) < BTN_DEBOUNCE_MS)
+  {
+    prev_pinb = pinb;
+    return;
+  }
+
+  if (changed & (1 << PB1))
+  { /* Check if PB1 changed (not other one in group)*/
+    /* Falling edge: was HIGH, now LOW */
+    if ((prev_pinb & (1 << PB1)) && !(pinb & (1 << PB1)))
+    {
+      last_time_btn_dw = millis_time;
+      ui_on_button(UI_BTN_MINUS);
+    }
+  }
+  prev_pinb = pinb;
+}
+ISR(PCINT2_vect)
+{
+  static uint8_t prev_pind = 0xFF;
+  uint8_t pind = PIND;
+  uint8_t changed = (uint8_t)(pind ^ prev_pind);
+
+  if ((millis_time - last_time_btn_up) < BTN_DEBOUNCE_MS)
+  {
+    prev_pind = pind;
+    return;
+  }
+
+  if (changed & (1 << PD7))
+  { /* Check if PD7 changed (not other pin in group) */
+    if ((prev_pind & (1 << PD7)) && !(pind & (1 << PD7)))
+    { /* check for falling edge */
+      last_time_btn_up = millis_time;
+      ui_on_button(UI_BTN_PLUS);
+    }
+  }
+  prev_pind = pind;
+}
+
+//-----------------------------------------------------------------------------
+void initTimer1() // Initialize Timer1 for 1 ms interrupts
 {
   // Ensure Timer1 is in a known state
   TCCR1A = 0;
@@ -228,8 +282,66 @@ void initTimer1()
   // Enable global interrupts
   sei();
 }
+// Timer1 Compare Match A Interrupt Service Routine
+ISR(TIMER1_COMPA_vect)
+{
+  millis_time++;
+  hist_time_elapse++;
+  // PORTB ^= (1 << PB5);
 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
+  soft_timer_update(&my_timer);
+  soft_timer_update(&display_show_timer);
+  soft_timer_update(&read_ina_timer);
+
+  // cccvCompute();
+}
+
+uint32_t millisT(void)
+{
+  uint32_t t;
+  uint8_t sreg = SREG;
+  cli();
+  t = millis_time;
+  SREG = sreg;
+  return t;
+}
+
+/*------------------------------------------------------------------*/
+/* new display write                                                */
+/*------------------------------------------------------------------*/
+static void ui_render_menu(Menu_t *m)
+{
+  display.clearDisplay();
+  display.setTextSize(1);
+
+  //title
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+
+  const char *title = menu_get_name(m);
+  display.println(title ? title : "NULL");
+  display.println("----------------");
+
+  uint8_t max = menu_get_max_items(m);
+  uint8_t sel = menu_get_selected(m);
+
+  for (uint8_t i = 1u; i <= max; i++)
+  {
+    if (i == sel)
+      display.print("> ");
+    else
+      display.print("  ");
+
+    const char *name = menu_get_item_name(m, i);
+    display.println(name ? name : "");
+  }
+
+  display.display();
+}
+
+/*------------------------------------------------------------------*/
+/* old display write                                                */
+/*------------------------------------------------------------------*/
 void displayWrite()
 {
   display.clearDisplay();
@@ -280,7 +392,7 @@ void displayWrite()
   display.display();
 }
 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 void errFunc()
 {
   for (int i = 0; i < 10; i++)
@@ -290,4 +402,10 @@ void errFunc()
     digitalWrite(RED_LED, HIGH);
     delay(650);
   }
+}
+
+void toggleLed()
+{
+  PORTB ^= (1 << PB5);
+  // toggleLed();
 }

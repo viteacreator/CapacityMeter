@@ -6,7 +6,6 @@
 #include <stdbool.h>
 
 
-
 typedef struct {
   Pin *_pin;
   uint32_t _tmr;
