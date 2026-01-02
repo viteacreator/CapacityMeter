@@ -19,7 +19,7 @@
 #define RELAYPIN 3
 #define HISTPERIOD 3000
 
-Adafruit_SSD1306 display(128, 56);
+Adafruit_SSD1306 display(128, 64);
 // INA226 ina((uint8_t)0x40);
 INA226_t ina;
 
@@ -34,7 +34,7 @@ SoftTimer_t my_timer;
 SoftTimer_t read_ina_timer;
 
 static void ui_render_menu(Menu_t *m);
-void computeData();
+void computeData(int16_t abs_current);
 
 /*------------------------------------------------------------------*/
 /* main functions                                                   */
@@ -106,6 +106,9 @@ void setup()
 void loop()
 {
   uint32_t actmillis_time = millisT();
+  uint16_t voltage = 0;
+  int16_t current = 0;
+  int16_t abs_current = 0;
 
   if (time_elapsed_flag(&read_ina_timer))
   {
@@ -128,16 +131,16 @@ void loop()
   if (time_elapsed_flag(&display_show_timer))
   {
     // toggleLed();
-    prev_time_test = actmillis_time;
+    //prev_time_test = actmillis_time;
     // displayWrite();
     ui_render_menu(g_current_menu);
-    time_test = actmillis_time - prev_time_test;
+    //time_test = actmillis_time - prev_time_test;
     // toggleLed();
   }
 
   if (time_elapsed_flag(&read_ina_timer))
   {
-    computeData();
+    computeData(abs_current);
   }
 
   if (abs_current > 1)
@@ -147,7 +150,7 @@ void loop()
   prev_active_curr_millis = actmillis_time;
 }
 
-void computeData()
+void computeData(int16_t abs_current)
 {
   uint32_t actmillis_time = millisT();
   loop_time = actmillis_time - prev_loop_millis;
@@ -230,7 +233,7 @@ ISR(PCINT0_vect)
   uint8_t changed = (uint8_t)(pinb ^ prev_pinb); /* changed bits */
 
   /* Debounce time gate */
-  if ((millis_time - last_time_btn_dw) < BTN_DEBOUNCE_MS)
+  if ((millisT() - last_time_btn_dw) < BTN_DEBOUNCE_MS)
   {
     prev_pinb = pinb;
     return;
@@ -241,7 +244,7 @@ ISR(PCINT0_vect)
     /* Falling edge: was HIGH, now LOW */
     if ((prev_pinb & (1 << PB1)) && !(pinb & (1 << PB1)))
     {
-      last_time_btn_dw = millis_time;
+      last_time_btn_dw = millisT();
       ui_on_button(UI_BTN_MINUS);
     }
   }
@@ -253,7 +256,7 @@ ISR(PCINT2_vect)
   uint8_t pind = PIND;
   uint8_t changed = (uint8_t)(pind ^ prev_pind);
 
-  if ((millis_time - last_time_btn_up) < BTN_DEBOUNCE_MS)
+  if ((millisT() - last_time_btn_up) < BTN_DEBOUNCE_MS)
   {
     prev_pind = pind;
     return;
@@ -263,7 +266,7 @@ ISR(PCINT2_vect)
   { /* Check if PD7 changed (not other pin in group) */
     if ((prev_pind & (1 << PD7)) && !(pind & (1 << PD7)))
     { /* check for falling edge */
-      last_time_btn_up = millis_time;
+      last_time_btn_up = millisT();
       ui_on_button(UI_BTN_PLUS);
     }
   }

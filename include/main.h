@@ -25,9 +25,9 @@ uint32_t prev_loop_millis = 0;
 int32_t capacity = 0;
 uint32_t prev_active_curr_millis = 0;
 uint32_t total_active_curr_millis = 0;
-volatile uint16_t voltage = 0;
-volatile int16_t current = 0;
-volatile int16_t abs_current = 0;
+//volatile uint16_t voltage = 0;
+//volatile int16_t current = 0;
+// volatile int16_t abs_current = 0;
 volatile uint32_t millis_time = 0;
 uint32_t loop_time = 0;
 
@@ -36,8 +36,8 @@ uint32_t last_time_btn_dw = 0;
 uint32_t last_time_btn_up = 0;
 
 volatile bool read_ina_flag = 0;
-uint32_t prev_time_test = 0;
-uint32_t time_test = 0;
+//uint32_t prev_time_test = 0;
+//uint32_t time_test = 0;
 
 extern SoftTimer_t display_show_timer;
 extern SoftTimer_t my_timer;
