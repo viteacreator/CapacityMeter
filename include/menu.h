@@ -13,7 +13,7 @@ extern "C" {
 #define MENU_MAX_ITEM_NAME_LEN    10u
 
 #ifndef MENU_MAX_MENUS
-#define MENU_MAX_MENUS 8u
+#define MENU_MAX_MENUS 12u
 #endif
 
 /* Opaque handle: users can't access struct fields directly */
@@ -41,7 +41,7 @@ extern Menu_t *g_current_menu;
 /**
  * Initialize a menu.
  *
- * This function sets up item names and automatically appends the last item as "Back".
+ * This function stores a PROGMEM pointer to item names and automatically appends the last item as "Back".
  * - items_without_back must be <= MENU_MAX_ITEMS - 1
  * - The last selectable item becomes "Back" (index = max_items)
  *
@@ -50,7 +50,7 @@ extern Menu_t *g_current_menu;
  */
 menu_status_t menu_init(Menu_t *menu,
                         uint8_t items_without_back,
-                        PGM_P const item_names[]);
+                        PGM_P const *item_names);
 
 /**
  * Create a new menu instance (from internal static storage).

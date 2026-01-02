@@ -245,7 +245,7 @@ ISR(PCINT0_vect)
     if ((prev_pinb & (1 << PB1)) && !(pinb & (1 << PB1)))
     {
       last_time_btn_dw = millisT();
-      ui_on_button(UI_BTN_MINUS);
+      ui_on_button(UI_BTN_PLUS);
     }
   }
   prev_pinb = pinb;
@@ -267,7 +267,7 @@ ISR(PCINT2_vect)
     if ((prev_pind & (1 << PD7)) && !(pind & (1 << PD7)))
     { /* check for falling edge */
       last_time_btn_up = millisT();
-      ui_on_button(UI_BTN_PLUS);
+      ui_on_button(UI_BTN_MINUS);
     }
   }
   prev_pind = pind;
@@ -362,13 +362,13 @@ static void ui_render_menu(Menu_t *m)
     // if (display.print((i == sel)))
     if (i == sel)
     {
-      // display.setTextColor(SSD1306_WHITE, SSD1306_BLACK); // Inverted color for selected item
-      display.print(F("> "));
+      display.setTextColor(SSD1306_BLACK, SSD1306_WHITE); // Inverted color for selected item
+      // display.print(F("> "));
     }
     else
     {
-      // display.setTextColor(SSD1306_BLACK, SSD1306_WHITE); // Normal color for other items
-      display.print(F("  "));
+      display.setTextColor(SSD1306_WHITE, SSD1306_BLACK); // Normal color for other items
+      // display.print(F("  "));
     }
     oled_print_pgm(menu_get_item_name(m, i));
   }

@@ -13,10 +13,10 @@ struct Menu
     uint8_t max_items; /* includes Back */
 
     PGM_P menu_name;
-    PGM_P item_name[MENU_MAX_ITEMS];
+    PGM_P const *item_names; /* PROGMEM array of item strings (no Back) */
 
-    struct Menu *previous_menu;
-    struct Menu *sub_menu[MENU_MAX_ITEMS - 1u]; /* submenus only for items excluding "Back" */
+    uint8_t prev_index;
+    uint8_t sub_index[MENU_MAX_ITEMS - 1u]; /* submenu indices for items excluding "Back" */
 };
 
 /* Global pointers */
@@ -25,6 +25,26 @@ Menu_t *g_current_menu = 0;
 
 static Menu_t s_menu_pool[MENU_MAX_MENUS];
 static uint8_t s_menu_pool_used = 0u;
+
+#define MENU_INDEX_NONE 0xFFu
+
+static uint8_t menu_index_from_ptr(const Menu_t *m)
+{
+    if (m == 0)
+    {
+        return MENU_INDEX_NONE;
+    }
+    return (uint8_t)(m - &s_menu_pool[0]);
+}
+
+static Menu_t *menu_from_index(uint8_t idx)
+{
+    if (idx == MENU_INDEX_NONE)
+    {
+        return 0;
+    }
+    return &s_menu_pool[idx];
+}
 
 Menu_t *menu_create(void)
 {
@@ -89,7 +109,7 @@ static uint8_t clamp_wrap_1based(uint8_t value, uint8_t max_items)
 
 menu_status_t menu_init(Menu_t *menu,
                         uint8_t items_without_back,
-                        PGM_P const item_names[])
+                        PGM_P const *item_names)
 {
     if (menu == 0)
     {
@@ -101,28 +121,24 @@ menu_status_t menu_init(Menu_t *menu,
     {
         return MENU_ERROR;
     }
+    if ((items_without_back > 0u) && (item_names == 0))
+    {
+        return MENU_ERROR;
+    }
 
     /* Clear structure fields that matter */
-    menu->previous_menu = 0;
+    menu->prev_index = MENU_INDEX_NONE;
     for (uint8_t i = 0u; i < (MENU_MAX_ITEMS - 1u); i++)
     {
-        menu->sub_menu[i] = 0;
+        menu->sub_index[i] = MENU_INDEX_NONE;
     }
 
     /* Default name */
     // menu->menu_name = "Menu";
     menu->menu_name = PSTR("Menu"); // PSTR macro places string in PROGMEM
 
-    // static const char s_back[] = "Back";
-    static const char s_back[] PROGMEM = "Back";// PROGMEM is AVR-specific attribute to store in flash
-    /* Copy item names (1..items_without_back) */
-    for (uint8_t i = 0; i < items_without_back; i++)
-    {
-        menu->item_name[i] = item_names[i];
-    }
-
-    /* Append last item: Back */
-    menu->item_name[items_without_back] = s_back;
+    /* Keep reference to PROGMEM item list (Back handled separately) */
+    menu->item_names = item_names;
 
     /* Total items includes Back */
     menu->max_items = (uint8_t)(items_without_back + 1u);
@@ -168,8 +184,15 @@ menu_status_t menu_set_submenu(Menu_t *parent, uint8_t item_index_1based, Menu_t
         return MENU_ERROR;
     }
 
-    parent->sub_menu[item_index_1based - 1u] = submenu;
-    submenu->previous_menu = parent;
+    uint8_t submenu_idx = menu_index_from_ptr(submenu);
+    uint8_t parent_idx = menu_index_from_ptr(parent);
+    if ((submenu_idx == MENU_INDEX_NONE) || (parent_idx == MENU_INDEX_NONE))
+    {
+        return MENU_ERROR;
+    }
+
+    parent->sub_index[item_index_1based - 1u] = submenu_idx;
+    submenu->prev_index = parent_idx;
     return MENU_OK;
 }
 
@@ -220,16 +243,16 @@ menu_action_t menu_enter_selected(Menu_t *menu)
     /* Back is always the last item */
     if (menu->selected == menu->max_items)
     {
-        if (menu->previous_menu != 0)
+        if (menu->prev_index != MENU_INDEX_NONE)
         {
-            g_current_menu = menu->previous_menu;
+            g_current_menu = menu_from_index(menu->prev_index);
             return MENU_ACTION_BACK;
         }
         return MENU_ACTION_NONE; /* Already at root */
     }
 
     /* Normal item: check submenu link */
-    Menu_t *next = menu->sub_menu[menu->selected - 1u];
+    Menu_t *next = menu_from_index(menu->sub_index[menu->selected - 1u]);
     if (next != 0)
     {
         g_current_menu = next;
@@ -260,7 +283,18 @@ PGM_P menu_get_item_name(const Menu_t *menu, uint8_t item_index_1based)
         return 0;
     }
 
-    return menu->item_name[item_index_1based - 1u];
+    if (item_index_1based == menu->max_items)
+    {
+        static const char s_back[] PROGMEM = "Back";
+        return s_back;
+    }
+
+    if (menu->item_names == 0)
+    {
+        return 0;
+    }
+
+    return (PGM_P)pgm_read_ptr(&menu->item_names[item_index_1based - 1u]);
 }
 
 uint8_t menu_get_max_items(const Menu_t *menu)
