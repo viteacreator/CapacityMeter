@@ -320,15 +320,127 @@ uint32_t millisT(void)
 /*------------------------------------------------------------------*/
 static void oled_print_pgm(PGM_P s)
 {
-  char buf[22];
   if (!s)
   {
     display.println(F("NULL"));
     return;
   }
-  strncpy_P(buf, s, sizeof(buf) - 1u);
-  buf[sizeof(buf) - 1u] = '\0';
-  display.println(buf);
+  display.println((__FlashStringHelper *)s);
+}
+static uint8_t oled_copy_pgm(PGM_P s, char *buf, uint8_t buf_size)
+{
+  if (buf == 0 || buf_size == 0u)
+  {
+    return 0u;
+  }
+  if (!s)
+  {
+    buf[0] = '\0';
+    return 0u;
+  }
+  uint8_t i = 0u;
+  for (; (i + 1u) < buf_size; i++)
+  {
+    char c = (char)pgm_read_byte(s + i);
+    if (c == '\0')
+    {
+      break;
+    }
+    buf[i] = c;
+  }
+  buf[i] = '\0';
+  return i;
+}
+static uint8_t oled_len_pgm(PGM_P s, uint8_t max_len)
+{
+  if (!s || max_len == 0u)
+  {
+    return 0u;
+  }
+  uint8_t i = 0u;
+  for (; i < max_len; i++)
+  {
+    char c = (char)pgm_read_byte(s + i);
+    if (c == '\0')
+    {
+      break;
+    }
+  }
+  return i;
+}
+static void ui_render_soft_menu(Menu_t *m)
+{
+  const uint8_t max = menu_get_max_items(m);
+  if (max == 0u)
+  {
+    return;
+  }
+
+  /* Skip root menu to keep the bottom line clean */
+  if (m == g_root_menu)
+  {
+    return;
+  }
+
+  char buf[12];
+  PGM_P left_p = 0;
+  PGM_P center_p = 0;
+  PGM_P right_p = 0;
+  uint8_t left_len = 0u;
+  uint8_t center_len = 0u;
+  uint8_t right_len = 0u;
+
+  if (max >= 2u)
+  {
+    left_p = menu_get_item_name(m, 1u);
+    left_len = oled_len_pgm(left_p, (uint8_t)(sizeof(buf) - 1u));
+  }
+  if (max >= 3u)
+  {
+    center_p = menu_get_item_name(m, 2u);
+    center_len = oled_len_pgm(center_p, (uint8_t)(sizeof(buf) - 1u));
+  }
+  right_p = menu_get_item_name(m, max);
+  right_len = oled_len_pgm(right_p, (uint8_t)(sizeof(buf) - 1u));
+
+  display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
+  const int16_t y = 56;
+
+  if (left_len > 0u)
+  {
+    oled_copy_pgm(left_p, buf, sizeof(buf));
+    display.setCursor(0, y);
+    display.print(buf);
+  }
+
+  int16_t right_x = 128 - (int16_t)right_len * 6;
+  if (right_len > 0u)
+  {
+    if (right_x < 0)
+    {
+      right_x = 0;
+    }
+    oled_copy_pgm(right_p, buf, sizeof(buf));
+    display.setCursor((uint8_t)right_x, y);
+    display.print(buf);
+  }
+
+  if (center_len > 0u)
+  {
+    int16_t center_x = (128 - (int16_t)center_len * 6) / 2;
+    if (center_x < 0)
+    {
+      center_x = 0;
+    }
+    int16_t left_end = (int16_t)left_len * 6;
+    int16_t center_end = center_x + (int16_t)center_len * 6;
+    if (center_x > (left_end + 2) && center_end < (right_x - 2))
+    {
+      oled_copy_pgm(center_p, buf, sizeof(buf));
+      display.setCursor((uint8_t)center_x, y);
+      display.print(buf);
+    }
+  }
 }
 static void ui_render_menu(Menu_t *m)
 {
@@ -343,6 +455,11 @@ static void ui_render_menu(Menu_t *m)
   // display.println(title ? title : "NULL");
   // display.println("----------------");
   oled_print_pgm(menu_get_name(m));
+  if (menu_get_status_left(m) != NULL || menu_get_status_right(m) != NULL){
+    // todo: if this menu has states to show. maximum 2 states, one in the left, one in the right
+  display.println();
+  }
+  display.println();
 
   uint8_t max = menu_get_max_items(m);
   uint8_t sel = menu_get_selected(m);
@@ -357,21 +474,43 @@ static void ui_render_menu(Menu_t *m)
   //   const char *name = menu_get_item_name(m, i);
   //   display.println(name ? name : "");
   // }
-  for (uint8_t i = 1u; i <= max; i++)
+  const uint8_t visible = 5u;
+  if (max > 0u)
   {
-    // if (display.print((i == sel)))
-    if (i == sel)
+    uint8_t start = 1u;
+    uint8_t end = max;
+    if (max > visible)
     {
-      display.setTextColor(SSD1306_BLACK, SSD1306_WHITE); // Inverted color for selected item
-      // display.print(F("> "));
+      if (sel <= 3u)
+      {
+        start = 1u;
+      }
+      else if (sel >= (max - 1u))
+      {
+        start = max - (visible - 1u);
+      }
+      else
+      {
+        start = sel - 2u;
+      }
+      end = start + visible - 1u;
     }
-    else
+    display.setCursor(0, 16);
+    for (uint8_t i = start; i <= end; i++)
     {
-      display.setTextColor(SSD1306_WHITE, SSD1306_BLACK); // Normal color for other items
-      // display.print(F("  "));
+      if (i == sel)
+      {
+        display.setTextColor(SSD1306_BLACK, SSD1306_WHITE); // Inverted color for selected item
+      }
+      else
+      {
+        display.setTextColor(SSD1306_WHITE, SSD1306_BLACK); // Normal color for other items
+      }
+      oled_print_pgm(menu_get_item_name(m, i));
     }
-    oled_print_pgm(menu_get_item_name(m, i));
   }
+
+  ui_render_soft_menu(m);
 
   display.display();
 }

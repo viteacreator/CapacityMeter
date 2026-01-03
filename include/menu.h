@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 /* Public configuration */
-#define MENU_MAX_ITEMS            6u
+#define MENU_MAX_ITEMS            7u
 // #define MENU_MAX_ITEM_NAME_LEN    10u
 
 #ifndef MENU_MAX_MENUS
@@ -96,10 +96,13 @@ menu_action_t menu_enter_selected(Menu_t *menu);
 
 /* Getters (read-only pointers to internal storage) */
 PGM_P menu_get_name(const Menu_t *menu);
+PGM_P menu_get_status_left(const Menu_t *menu);
+PGM_P menu_get_status_right(const Menu_t *menu);
 PGM_P menu_get_item_name(const Menu_t *menu, uint8_t item_index_1based);
 
 uint8_t menu_get_max_items(const Menu_t *menu);          /* includes Back */
 uint8_t menu_get_selected(const Menu_t *menu);           /* 1..max_items */
+
 
 #ifdef __cplusplus
 }

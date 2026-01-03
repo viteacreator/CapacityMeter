@@ -150,12 +150,13 @@ void ui_tree_init(void)
         static const char STR_MAIN2[] PROGMEM = "3.Res. test (DC/AC)";
         static const char STR_MAIN3[] PROGMEM = "4.View logs files";
         static const char STR_MAIN4[] PROGMEM = "5.Something else";
+        static const char STR_MAIN5[] PROGMEM = "6.Something else agai";
 
         static PGM_P const MAIN_ITEMS[] PROGMEM = {
-            STR_MAIN0, STR_MAIN1, STR_MAIN2, STR_MAIN3, STR_MAIN4};
+            STR_MAIN0, STR_MAIN1, STR_MAIN2, STR_MAIN3, STR_MAIN4, STR_MAIN5};
 
         m_main = menu_create();
-        (void)menu_init(m_main, 5u, MAIN_ITEMS);
+        (void)menu_init(m_main, 6u, MAIN_ITEMS);
         menu_set_name(m_main, PSTR("   ---Main menu---"));
     }
 
@@ -202,7 +203,7 @@ void ui_tree_init(void)
         m_opt_cdc = menu_create();
         (void)menu_init(m_opt_cdc, 0u, 0);
         // menu_set_name(m_opt_cdc, "Chg-Disch-Chg-Options");
-        menu_set_name(m_opt_cdc, PSTR("--Chg-Disch-Chg-Opts--"));
+        menu_set_name(m_opt_cdc, PSTR(" -Chg-Disch-Chg-Opts-"));
     }
 
     /* RUN: Discharging */
@@ -296,7 +297,7 @@ void ui_tree_init(void)
             STR_RRT0, STR_RRT1};
         m_run_resist = menu_create();
         (void)menu_init(m_run_resist, 2u, RRT_ITEMS);
-        menu_set_name(m_run_resist, PSTR("-Resist. test (DC/AC)-"));
+        menu_set_name(m_run_resist, PSTR(" Resist. test (DC/AC)"));
     }
 
     /* ---------- Logs stub ---------- */

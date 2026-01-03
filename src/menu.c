@@ -3,9 +3,32 @@
 #include <avr/pgmspace.h>
 
 /**
- * Internal structure definition (hidden from users)
- * PGM_P is a typedef for const char* in PROGMEM space (on AVR) and not in RAM
- * because we want to save RAM on AVR targets.
+ * Internal menu screen definition (hidden from users).
+ *
+ * NOTE:
+ * - On AVR targets we store constant strings in flash (PROGMEM) to save RAM.
+ * - PGM_P is a pointer type to a NUL-terminated string located in program memory
+ *   (flash) on AVR; on non-AVR it typically resolves to a normal const char*.
+ *
+ * This menu was initially created for: 128x64 SSD1306 OLED display with 6x8 font
+ * Screen layout model (for 128x64 SSD1306 using an 8-line and 21-columns text grid for 6x8 font):
+ *
+ *  Line 1: Title (menu/screen name)
+ *  Line 2: Optional status/state line:
+ *          - up to two short fields: left and right (e.g. "State: progress" / "uSD:Ok")
+ *          - if no states are provided, this line is left blank
+ *  Lines 3 to (LAST_LINE-1): Scrollable content area:
+ *          - list items (submenu entries) or live parameters
+ *          - if there are more lines/items than fit, the view scrolls
+ *  Line LAST_LINE: Soft-key bar (reserved):
+ *          - left / center / right actions (e.g. "Back", "Exit", "Start", "Stop", "Options")
+ *          - used for context-dependent commands, not for normal list items
+ *          - the "Back" is must to have, except for the root menu 
+ *
+ * "Options" concept:
+ * - "Options" is an optional associated screen that provides an extended view
+ *   (history, aggregates, extra parameters) for the current RUN/leaf screen.
+ * - It is not a generic submenu; it is a strongly related companion screen.
  */
 struct Menu
 {
@@ -13,6 +36,8 @@ struct Menu
     uint8_t max_items; /* includes Back */
 
     PGM_P menu_name;
+    PGM_P status_left;
+    PGM_P status_right;
     PGM_P const *item_names; /* PROGMEM array of item strings (no Back) */
 
     uint8_t prev_index;
@@ -269,6 +294,23 @@ PGM_P menu_get_name(const Menu_t *menu)
         return 0;
     }
     return menu->menu_name;
+}
+
+PGM_P menu_get_status_left(const Menu_t *menu)
+{
+    if (menu == 0)
+    {
+        return 0;
+    }
+    return menu->status_left;
+}
+PGM_P menu_get_status_right(const Menu_t *menu)
+{
+    if (menu == 0)
+    {
+        return 0;
+    }
+    return menu->status_right;
 }
 
 PGM_P menu_get_item_name(const Menu_t *menu, uint8_t item_index_1based)
