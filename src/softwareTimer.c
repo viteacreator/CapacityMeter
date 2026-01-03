@@ -1,6 +1,6 @@
 #include "softwareTimer.h"
 
-/*
+/**
  * Initialize the software timer module
  *
  * Sets up the timer structure with the specified interval and callback function.
@@ -18,7 +18,7 @@ void soft_timer_init(SoftTimer_t *timer, uint32_t interval_ms, void (*callback)(
     timer->callback = callback;       /* Set the callback function */
 }
 
-/*
+/**
  * Update the timer, called from the ISR every 1 ms
  *
  * This function should be called from a timer interrupt service routine
@@ -47,7 +47,7 @@ void soft_timer_update(SoftTimer_t *timer)
     }
 }
 
-/*
+/**
  * Check and reset the elapsed time flag
  *
  * Returns true if the interval has elapsed and resets the flag.
@@ -70,7 +70,7 @@ bool time_elapsed_flag(SoftTimer_t *timer)
     }
 }
 
-/*
+/**
  * Start a specific timer
  *
  * Transitions the timer from stopped to running state and resets
@@ -84,7 +84,7 @@ void soft_timer_start(SoftTimer_t *timer)
     timer->state = TIMER_START; /* Set the timer state to running */
 }
 
-/*
+/**
  * Stop a specific timer
  *
  * Transitions the timer from running to stopped state.

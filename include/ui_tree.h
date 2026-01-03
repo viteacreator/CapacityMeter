@@ -20,8 +20,8 @@ void ui_tree_init(void);
 
 /* Feed button events here */
 void ui_on_button(ui_button_t btn);
-
-
+/* Render the current menu/screen */
+//void ui_render_current(void);
 
 #ifdef __cplusplus
 }

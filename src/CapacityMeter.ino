@@ -320,7 +320,7 @@ uint32_t millisT(void)
 /*------------------------------------------------------------------*/
 static void oled_print_pgm(PGM_P s)
 {
-  char buf[20];
+  char buf[22];
   if (!s)
   {
     display.println(F("NULL"));

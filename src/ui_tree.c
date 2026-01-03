@@ -145,18 +145,18 @@ void ui_tree_init(void)
         // m_main = menu_create();
         // (void)menu_init(m_main, 5u, items);
         // menu_set_name(m_main, "Main menu");
-        static const char STR_MAIN0[] PROGMEM = "Btr simple test";
-        static const char STR_MAIN1[] PROGMEM = "Btr cycles test";
-        static const char STR_MAIN2[] PROGMEM = "Res. test (DC/AC)";
-        static const char STR_MAIN3[] PROGMEM = "View logs files";
-        static const char STR_MAIN4[] PROGMEM = "Something else";
+        static const char STR_MAIN0[] PROGMEM = "1.Btr simple test";
+        static const char STR_MAIN1[] PROGMEM = "2.Btr cycles test";
+        static const char STR_MAIN2[] PROGMEM = "3.Res. test (DC/AC)";
+        static const char STR_MAIN3[] PROGMEM = "4.View logs files";
+        static const char STR_MAIN4[] PROGMEM = "5.Something else";
 
         static PGM_P const MAIN_ITEMS[] PROGMEM = {
             STR_MAIN0, STR_MAIN1, STR_MAIN2, STR_MAIN3, STR_MAIN4};
 
         m_main = menu_create();
         (void)menu_init(m_main, 5u, MAIN_ITEMS);
-        menu_set_name(m_main, PSTR("Main menu"));
+        menu_set_name(m_main, PSTR("   ---Main menu---"));
     }
 
     /* ---------- Battery simple test (LIST) ---------- */
@@ -169,14 +169,14 @@ void ui_tree_init(void)
         // m_batt_simple_list = menu_create();
         // (void)menu_init(m_batt_simple_list, 3u, items);
         // menu_set_name(m_batt_simple_list, "Battery simple test");
-        static const char STR_BST0[] PROGMEM = "Chg-Disch-Chg";
-        static const char STR_BST1[] PROGMEM = "Discharging";
-        static const char STR_BST2[] PROGMEM = "Charging";
+        static const char STR_BST0[] PROGMEM = "1.Chg-Disch-Chg";
+        static const char STR_BST1[] PROGMEM = "2.Discharging";
+        static const char STR_BST2[] PROGMEM = "3.Charging";
         static PGM_P const BST_ITEMS[] PROGMEM = {
             STR_BST0, STR_BST1, STR_BST2};
         m_batt_simple_list = menu_create();
         (void)menu_init(m_batt_simple_list, 3u, BST_ITEMS);
-        menu_set_name(m_batt_simple_list, PSTR("Btr simple test"));        
+        menu_set_name(m_batt_simple_list, PSTR(" --Btr simple test--"));        
     }
 
     /* RUN: Chg-Disch-Chg */
@@ -194,7 +194,7 @@ void ui_tree_init(void)
             STR_RCDC0, STR_RCDC1};
         m_run_cdc = menu_create();
         (void)menu_init(m_run_cdc, 2u, RCDC_ITEMS);
-        menu_set_name(m_run_cdc, PSTR("Chg-Disch-Chg"));
+        menu_set_name(m_run_cdc, PSTR("   -Chg-Disch-Chg-"));
     }
 
     /* OPTIONS: Chg-Disch-Chg-Options (Back only) */
@@ -202,7 +202,7 @@ void ui_tree_init(void)
         m_opt_cdc = menu_create();
         (void)menu_init(m_opt_cdc, 0u, 0);
         // menu_set_name(m_opt_cdc, "Chg-Disch-Chg-Options");
-        menu_set_name(m_opt_cdc, PSTR("Chg-Disch-Chg-Opts"));
+        menu_set_name(m_opt_cdc, PSTR("--Chg-Disch-Chg-Opts--"));
     }
 
     /* RUN: Discharging */
@@ -218,7 +218,7 @@ void ui_tree_init(void)
             STR_RD0};
         m_run_disch = menu_create();
         (void)menu_init(m_run_disch, 1u, RD_ITEMS);
-        menu_set_name(m_run_disch, PSTR("Discharging"));
+        menu_set_name(m_run_disch, PSTR("    -Discharging-"));
     }
 
     /* RUN: Charging (Finished -> Start) */
@@ -234,7 +234,7 @@ void ui_tree_init(void)
             STR_RC0};
         m_run_chg = menu_create();
         (void)menu_init(m_run_chg, 1u, RC_ITEMS);
-        menu_set_name(m_run_chg, PSTR("Charging"));
+        menu_set_name(m_run_chg, PSTR("     -Charging-"));
     }
 
     /* ---------- Battery cycles test (RUN) ---------- */
@@ -252,7 +252,7 @@ void ui_tree_init(void)
             STR_RCYC0, STR_RCYC1};
         m_run_cycles = menu_create();
         (void)menu_init(m_run_cycles, 2u, RCYC_ITEMS);
-        menu_set_name(m_run_cycles, PSTR("Btr cycles test"));
+        menu_set_name(m_run_cycles, PSTR(" --Btr cycles test--"));
     }
 
     /* OPTIONS: Battery test-Options (Back only) */
@@ -260,7 +260,7 @@ void ui_tree_init(void)
         m_opt_cycles = menu_create();
         (void)menu_init(m_opt_cycles, 0u, 0);
         // menu_set_name(m_opt_cycles, "Battery test-Options");
-        menu_set_name(m_opt_cycles, PSTR("Btr test-Opts"));
+        menu_set_name(m_opt_cycles, PSTR("   -Btr test-Opts-"));
     }
 
     /* MODAL: Stop confirm */
@@ -296,7 +296,7 @@ void ui_tree_init(void)
             STR_RRT0, STR_RRT1};
         m_run_resist = menu_create();
         (void)menu_init(m_run_resist, 2u, RRT_ITEMS);
-        menu_set_name(m_run_resist, PSTR("Resist. test (DC/AC)"));
+        menu_set_name(m_run_resist, PSTR("-Resist. test (DC/AC)-"));
     }
 
     /* ---------- Logs stub ---------- */
@@ -304,7 +304,7 @@ void ui_tree_init(void)
         m_logs_stub = menu_create();
         (void)menu_init(m_logs_stub, 0u, 0);
         // menu_set_name(m_logs_stub, "Logs");
-        menu_set_name(m_logs_stub, PSTR("Logs"));
+        menu_set_name(m_logs_stub, PSTR("       -Logs-"));
     }
 
     /* ---------- Something else stub ---------- */
@@ -312,7 +312,7 @@ void ui_tree_init(void)
         m_something_stub = menu_create();
         (void)menu_init(m_something_stub, 0u, 0);
         // menu_set_name(m_something_stub, "Something else");
-        menu_set_name(m_something_stub, PSTR("Something else"));
+        menu_set_name(m_something_stub, PSTR("  -Something else-"));
     }
 
     /* ====== Link the tree (submenus) ====== */

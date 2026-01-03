@@ -19,7 +19,7 @@ typedef enum
 /* Timer structure */
 typedef struct
 {
-  uint32_t interval_ms;   /* Timer interval in milliseconds */
+  uint32_t interval_ms;   /* Timer interval when is triggered */
   uint32_t elapsed_time;  /* Elapsed time */
   bool elapsed_time_flag; /* Flag set when the interval has elapsed */
   TimerState_t state;     /* Current state of the timer (stopped or running) */

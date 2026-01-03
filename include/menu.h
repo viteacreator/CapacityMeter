@@ -10,10 +10,10 @@ extern "C" {
 
 /* Public configuration */
 #define MENU_MAX_ITEMS            6u
-#define MENU_MAX_ITEM_NAME_LEN    10u
+// #define MENU_MAX_ITEM_NAME_LEN    10u
 
 #ifndef MENU_MAX_MENUS
-#define MENU_MAX_MENUS 12u
+#define MENU_MAX_MENUS 13u
 #endif
 
 /* Opaque handle: users can't access struct fields directly */
