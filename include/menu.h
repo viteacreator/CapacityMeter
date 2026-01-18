@@ -79,7 +79,7 @@ menu_status_t menu_set_submenu(Menu_t *parent, uint8_t item_index_1based, Menu_t
  * Select an item by 1-based index.
  * Wrap behavior:
  * - if index < 1 -> wraps to last item
- * - if index > max_items -> wraps to first item
+ * - if index > total selectable -> wraps to first item
  *
  * Returns the current selected index (1..total selectable).
  */

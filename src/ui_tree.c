@@ -150,28 +150,26 @@ static void ui_handle_leaf(Menu_t *menu, uint8_t selected_1based)
  */
 void ui_tree_init(void)
 {
-    static const char SK_BACK[] PROGMEM = "Back";
-    static const char SK_OPTIONS[] PROGMEM = "Options";
-    static const char SK_STOP[] PROGMEM = "STOP";
-    static const char SK_START[] PROGMEM = "Start";
-    static const char SK_ACDC[] PROGMEM = "AC/DC";
+    static const char SK_BACK[] PROGMEM = "Back ";
+    static const char SK_OPTIONS[] PROGMEM = " Options ";
+    static const char SK_STOP[] PROGMEM = " STOP";
+    static const char SK_START[] PROGMEM = " Start ";
+    static const char SK_ACDC[] PROGMEM = " AC/DC ";
     static const char SK_STARTSTOP[] PROGMEM = "START/STOP";
-    static const char SK_SURE[] PROGMEM = "Sure";
-    static const char SK_CANCEL[] PROGMEM = "Cancel";
+    static const char SK_SURE[] PROGMEM = " Sure ";
+    static const char SK_CANCEL[] PROGMEM = " Cancel ";
 
     static PGM_P const SK_BACK_ONLY[] PROGMEM = {SK_BACK, 0, 0};
     static PGM_P const SK_BACK_OPTIONS_STOP[] PROGMEM = {SK_BACK, SK_OPTIONS, SK_STOP};
     static PGM_P const SK_BACK_STOP[] PROGMEM = {SK_BACK, 0, SK_STOP};
     static PGM_P const SK_BACK_START[] PROGMEM = {SK_BACK, 0, SK_START};
     static PGM_P const SK_BACK_ACDC_STARTSTOP[] PROGMEM = {SK_BACK, SK_ACDC, SK_STARTSTOP};
-    static PGM_P const SK_BACK_CANCEL_SURE[] PROGMEM = {SK_BACK, SK_CANCEL, SK_SURE};
 
     static menu_softkey_cb_t const SK_BACK_ONLY_ACT[] PROGMEM = {action_soft_back, 0, 0};
     static menu_softkey_cb_t const SK_BACK_OPTIONS_STOP_ACT[] PROGMEM = {action_soft_back, action_open_opt_cdc, action_stop_simple_run};
     static menu_softkey_cb_t const SK_BACK_STOP_ACT[] PROGMEM = {action_soft_back, 0, action_stop_simple_run};
     static menu_softkey_cb_t const SK_BACK_START_ACT[] PROGMEM = {action_soft_back, 0, action_start_charging};
     static menu_softkey_cb_t const SK_BACK_ACDC_STARTSTOP_ACT[] PROGMEM = {action_soft_back, action_toggle_resist_mode, action_toggle_resist_start_stop};
-    static menu_softkey_cb_t const SK_BACK_CANCEL_SURE_ACT[] PROGMEM = {action_soft_back, action_soft_back, action_stop_cycles};
 
     /* ---------- MAIN MENU ---------- */
     {
@@ -187,7 +185,7 @@ void ui_tree_init(void)
         // menu_set_name(m_main, "Main menu");
         static const char STR_MAIN0[] PROGMEM = "1.Battery simple test";
         static const char STR_MAIN1[] PROGMEM = "2.Battery cycles test";
-        static const char STR_MAIN2[] PROGMEM = "3.Res. test (DC/AC)";
+        static const char STR_MAIN2[] PROGMEM = "3.Intern resist. test";
         static const char STR_MAIN3[] PROGMEM = "4.View logs files";
 
         static PGM_P const MAIN_ITEMS[] PROGMEM = {
@@ -337,8 +335,8 @@ void ui_tree_init(void)
         // m_run_resist = menu_create();
         // (void)menu_init(m_run_resist, 2u, items);
         // menu_set_name(m_run_resist, "Resist. test (DC/AC)");
-        static const char STR_RRT0[] PROGMEM = "AC/DC";
-        static const char STR_RRT1[] PROGMEM = "START/STOP";
+        static const char STR_RRT0[] PROGMEM = " ";
+        static const char STR_RRT1[] PROGMEM = " ";
         static PGM_P const RRT_ITEMS[] PROGMEM = {
             STR_RRT0, STR_RRT1};
         m_run_resist = menu_create();

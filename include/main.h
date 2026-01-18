@@ -3,8 +3,6 @@
 
 #include <SPI.h>
 #include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 // #include "INA219.h"
 
 #include "ina_adc.h"
@@ -14,22 +12,21 @@
 
 #include "menu.h"      /* g_current_menu */
 #include "ui_tree.h"   /* UI tree + button handler */
+#include "display_if.h"
 
 #define RED_LED 13
 #define SCREEN_ADDRESS 0x3C  // OLED display I2C address
-
-extern Adafruit_SSD1306 display;
 // extern INA226 ina;
 
-uint32_t prev_loop_millis = 0;
-int32_t capacity_uah = 0;
-uint32_t prev_active_curr_millis = 0;
-uint32_t total_active_curr_millis = 0;
+extern uint32_t prev_loop_millis;
+extern int32_t capacity_uah;
+extern uint32_t prev_active_curr_millis;
+extern uint32_t total_active_curr_millis;
 //volatile uint16_t voltage = 0;
 //volatile int16_t current = 0;
 // volatile int16_t abs_current = 0;
-volatile uint32_t millis_time = 0;
-uint32_t loop_time = 0;
+extern volatile uint32_t millis_time;
+extern uint32_t loop_time;
 
 
 //uint32_t prev_time_test = 0;

@@ -10,6 +10,7 @@
             "includePath": [
                 "c:/Git_repo_s/CapacityMeter/include",
                 "c:/Git_repo_s/CapacityMeter/src",
+                "c:/Git_repo_s/CapacityMeter/.pio/libdeps/nanoatmega328new/U8g2/src",
                 "c:/Git_repo_s/CapacityMeter/.pio/libdeps/nanoatmega328new/Adafruit SSD1306",
                 "c:/Git_repo_s/CapacityMeter/.pio/libdeps/nanoatmega328new/Adafruit GFX Library",
                 "c:/Git_repo_s/CapacityMeter/.pio/libdeps/nanoatmega328new/Adafruit BusIO",
@@ -27,6 +28,7 @@
                 "path": [
                     "c:/Git_repo_s/CapacityMeter/include",
                     "c:/Git_repo_s/CapacityMeter/src",
+                    "c:/Git_repo_s/CapacityMeter/.pio/libdeps/nanoatmega328new/U8g2/src",
                     "c:/Git_repo_s/CapacityMeter/.pio/libdeps/nanoatmega328new/Adafruit SSD1306",
                     "c:/Git_repo_s/CapacityMeter/.pio/libdeps/nanoatmega328new/Adafruit GFX Library",
                     "c:/Git_repo_s/CapacityMeter/.pio/libdeps/nanoatmega328new/Adafruit BusIO",
