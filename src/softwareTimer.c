@@ -9,7 +9,7 @@
  * @param intervalMs - Interval in milliseconds
  * @param callback - Callback function pointer (NULL for no callback)
  */
-void soft_timer_init(SoftTimer_t *timer, uint32_t interval_ms, void (*callback)(void))
+void soft_timer_init(SoftTimer_t *timer, uint16_t interval_ms, void (*callback)(void))
 {
     timer->interval_ms = interval_ms; /* Set the interval for the timer */
     timer->elapsed_time = 0;          /* Initialize elapsed time to 0 */

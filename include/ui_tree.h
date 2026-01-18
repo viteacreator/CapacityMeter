@@ -20,7 +20,7 @@ void ui_tree_init(void);
 
 /* Feed button events here */
 void ui_on_button(ui_button_t btn);
-/* Render the current menu/screen */
+/* Render the current menu/screen. i guess we will need 124x64 static RAM */
 //void ui_render_current(void);
 
 #ifdef __cplusplus

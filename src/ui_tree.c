@@ -47,11 +47,31 @@ static void action_start_charging(void)
     /* TODO: start charging sequence (when State=Finished) */
 }
 
+static void action_soft_back(void)
+{
+    (void)menu_back(g_current_menu);
+}
+
+static void action_open_opt_cdc(void)
+{
+    g_current_menu = m_opt_cdc;
+}
+
+static void action_open_opt_cycles(void)
+{
+    g_current_menu = m_opt_cycles;
+}
+
+static void action_open_stop_confirm(void)
+{
+    g_current_menu = m_modal_stop_confirm;
+}
+
 /**
- * @brief when OK is pressed and the selected item has no submenu and is not Back
+ * @brief when OK is pressed and the selected item has no submenu
  * @param menu Current menu
  * @param selected_1based Selected item index (1-based)
- * it is called 1based because menu_get_selected() returns 1based, meaning the first item is index 1, not 0
+ * it is called 1based because menu_get_selected() returns 1based (list or soft-key selection)
  * 0 is invalid
  * @return void
  */
@@ -60,7 +80,7 @@ static void ui_handle_leaf(Menu_t *menu, uint8_t selected_1based)
     /* ===== Battery simple: RUN screens ===== */
     if (menu == m_run_cdc)
     {
-        /* Items: 1=Options (submenu), 2=STOP (leaf), 3=Back */
+        /* Items: 1=Options (submenu), 2=STOP (leaf) */
         if (selected_1based == 2u)
         {
             action_stop_simple_run();
@@ -70,7 +90,7 @@ static void ui_handle_leaf(Menu_t *menu, uint8_t selected_1based)
 
     if (menu == m_run_disch)
     {
-        /* Items: 1=STOP (leaf), 2=Back */
+        /* Items: 1=STOP (leaf) */
         if (selected_1based == 1u)
         {
             action_stop_simple_run();
@@ -80,7 +100,7 @@ static void ui_handle_leaf(Menu_t *menu, uint8_t selected_1based)
 
     if (menu == m_run_chg)
     {
-        /* Items: 1=Start (leaf), 2=Back */
+        /* Items: 1=Start (leaf) */
         if (selected_1based == 1u)
         {
             action_start_charging();
@@ -91,19 +111,16 @@ static void ui_handle_leaf(Menu_t *menu, uint8_t selected_1based)
     /* ===== Cycles test: modal confirm ===== */
     if (menu == m_modal_stop_confirm)
     {
-        /* Items: 1=Sure, 2=Cancel, 3=Back */
+        /* Items: 1=Sure, 2=Cancel */
         if (selected_1based == 1u)
         {
             action_stop_cycles();
-            /* Go back (same effect as selecting Back) */
-            menu_select(menu, menu_get_max_items(menu));
-            (void)menu_enter_selected(menu);
+            (void)menu_back(menu);
         }
         else
         {
-            /* Cancel or Back -> return to previous screen */
-            menu_select(menu, menu_get_max_items(menu));
-            (void)menu_enter_selected(menu);
+            /* Cancel -> return to previous screen */
+            (void)menu_back(menu);
         }
         return;
     }
@@ -111,7 +128,7 @@ static void ui_handle_leaf(Menu_t *menu, uint8_t selected_1based)
     /* ===== Resist test: actions ===== */
     if (menu == m_run_resist)
     {
-        /* Items: 1=AC/DC, 2=START/STOP, 3=Back */
+        /* Items: 1=AC/DC, 2=START/STOP */
         if (selected_1based == 1u)
         {
             action_toggle_resist_mode();
@@ -133,6 +150,29 @@ static void ui_handle_leaf(Menu_t *menu, uint8_t selected_1based)
  */
 void ui_tree_init(void)
 {
+    static const char SK_BACK[] PROGMEM = "Back";
+    static const char SK_OPTIONS[] PROGMEM = "Options";
+    static const char SK_STOP[] PROGMEM = "STOP";
+    static const char SK_START[] PROGMEM = "Start";
+    static const char SK_ACDC[] PROGMEM = "AC/DC";
+    static const char SK_STARTSTOP[] PROGMEM = "START/STOP";
+    static const char SK_SURE[] PROGMEM = "Sure";
+    static const char SK_CANCEL[] PROGMEM = "Cancel";
+
+    static PGM_P const SK_BACK_ONLY[] PROGMEM = {SK_BACK, 0, 0};
+    static PGM_P const SK_BACK_OPTIONS_STOP[] PROGMEM = {SK_BACK, SK_OPTIONS, SK_STOP};
+    static PGM_P const SK_BACK_STOP[] PROGMEM = {SK_BACK, 0, SK_STOP};
+    static PGM_P const SK_BACK_START[] PROGMEM = {SK_BACK, 0, SK_START};
+    static PGM_P const SK_BACK_ACDC_STARTSTOP[] PROGMEM = {SK_BACK, SK_ACDC, SK_STARTSTOP};
+    static PGM_P const SK_BACK_CANCEL_SURE[] PROGMEM = {SK_BACK, SK_CANCEL, SK_SURE};
+
+    static menu_softkey_cb_t const SK_BACK_ONLY_ACT[] PROGMEM = {action_soft_back, 0, 0};
+    static menu_softkey_cb_t const SK_BACK_OPTIONS_STOP_ACT[] PROGMEM = {action_soft_back, action_open_opt_cdc, action_stop_simple_run};
+    static menu_softkey_cb_t const SK_BACK_STOP_ACT[] PROGMEM = {action_soft_back, 0, action_stop_simple_run};
+    static menu_softkey_cb_t const SK_BACK_START_ACT[] PROGMEM = {action_soft_back, 0, action_start_charging};
+    static menu_softkey_cb_t const SK_BACK_ACDC_STARTSTOP_ACT[] PROGMEM = {action_soft_back, action_toggle_resist_mode, action_toggle_resist_start_stop};
+    static menu_softkey_cb_t const SK_BACK_CANCEL_SURE_ACT[] PROGMEM = {action_soft_back, action_soft_back, action_stop_cycles};
+
     /* ---------- MAIN MENU ---------- */
     {
         // static const char *const items[] = {
@@ -145,18 +185,16 @@ void ui_tree_init(void)
         // m_main = menu_create();
         // (void)menu_init(m_main, 5u, items);
         // menu_set_name(m_main, "Main menu");
-        static const char STR_MAIN0[] PROGMEM = "1.Btr simple test";
-        static const char STR_MAIN1[] PROGMEM = "2.Btr cycles test";
+        static const char STR_MAIN0[] PROGMEM = "1.Battery simple test";
+        static const char STR_MAIN1[] PROGMEM = "2.Battery cycles test";
         static const char STR_MAIN2[] PROGMEM = "3.Res. test (DC/AC)";
         static const char STR_MAIN3[] PROGMEM = "4.View logs files";
-        static const char STR_MAIN4[] PROGMEM = "5.Something else";
-        static const char STR_MAIN5[] PROGMEM = "6.Something else agai";
 
         static PGM_P const MAIN_ITEMS[] PROGMEM = {
-            STR_MAIN0, STR_MAIN1, STR_MAIN2, STR_MAIN3, STR_MAIN4, STR_MAIN5};
+            STR_MAIN0, STR_MAIN1, STR_MAIN2, STR_MAIN3};
 
         m_main = menu_create();
-        (void)menu_init(m_main, 6u, MAIN_ITEMS);
+        (void)menu_init(m_main, sizeof(MAIN_ITEMS) / sizeof(MAIN_ITEMS[0]), MAIN_ITEMS);
         menu_set_name(m_main, PSTR("   ---Main menu---"));
     }
 
@@ -178,6 +216,7 @@ void ui_tree_init(void)
         m_batt_simple_list = menu_create();
         (void)menu_init(m_batt_simple_list, 3u, BST_ITEMS);
         menu_set_name(m_batt_simple_list, PSTR(" --Btr simple test--"));        
+        menu_set_soft_keys(m_batt_simple_list, SK_BACK_ONLY, SK_BACK_ONLY_ACT);
     }
 
     /* RUN: Chg-Disch-Chg */
@@ -189,13 +228,14 @@ void ui_tree_init(void)
         // m_run_cdc = menu_create();
         // (void)menu_init(m_run_cdc, 2u, items);
         // menu_set_name(m_run_cdc, "Chg-Disch-Chg");
-        static const char STR_RCDC0[] PROGMEM = "Options";
-        static const char STR_RCDC1[] PROGMEM = "STOP";
+        static const char STR_RCDC0[] PROGMEM = " ";
+        static const char STR_RCDC1[] PROGMEM = " ";
         static PGM_P const RCDC_ITEMS[] PROGMEM = {
             STR_RCDC0, STR_RCDC1};
         m_run_cdc = menu_create();
         (void)menu_init(m_run_cdc, 2u, RCDC_ITEMS);
         menu_set_name(m_run_cdc, PSTR("   -Chg-Disch-Chg-"));
+        menu_set_soft_keys(m_run_cdc, SK_BACK_OPTIONS_STOP, SK_BACK_OPTIONS_STOP_ACT);
     }
 
     /* OPTIONS: Chg-Disch-Chg-Options (Back only) */
@@ -204,6 +244,7 @@ void ui_tree_init(void)
         (void)menu_init(m_opt_cdc, 0u, 0);
         // menu_set_name(m_opt_cdc, "Chg-Disch-Chg-Options");
         menu_set_name(m_opt_cdc, PSTR(" -Chg-Disch-Chg-Opts-"));
+        menu_set_soft_keys(m_opt_cdc, SK_BACK_ONLY, SK_BACK_ONLY_ACT);
     }
 
     /* RUN: Discharging */
@@ -214,12 +255,13 @@ void ui_tree_init(void)
         // m_run_disch = menu_create();
         // (void)menu_init(m_run_disch, 1u, items);
         // menu_set_name(m_run_disch, "Discharging");
-        static const char STR_RD0[] PROGMEM = "STOP";
+        static const char STR_RD0[] PROGMEM = " ";
         static PGM_P const RD_ITEMS[] PROGMEM = {
             STR_RD0};
         m_run_disch = menu_create();
         (void)menu_init(m_run_disch, 1u, RD_ITEMS);
         menu_set_name(m_run_disch, PSTR("    -Discharging-"));
+        menu_set_soft_keys(m_run_disch, SK_BACK_STOP, SK_BACK_STOP_ACT);
     }
 
     /* RUN: Charging (Finished -> Start) */
@@ -230,12 +272,13 @@ void ui_tree_init(void)
         // m_run_chg = menu_create();
         // (void)menu_init(m_run_chg, 1u, items);
         // menu_set_name(m_run_chg, "Charging");
-        static const char STR_RC0[] PROGMEM = "Start";
+        static const char STR_RC0[] PROGMEM = " ";
         static PGM_P const RC_ITEMS[] PROGMEM = {
             STR_RC0};
         m_run_chg = menu_create();
         (void)menu_init(m_run_chg, 1u, RC_ITEMS);
         menu_set_name(m_run_chg, PSTR("     -Charging-"));
+        menu_set_soft_keys(m_run_chg, SK_BACK_START, SK_BACK_START_ACT);
     }
 
     /* ---------- Battery cycles test (RUN) ---------- */
@@ -247,13 +290,15 @@ void ui_tree_init(void)
         // m_run_cycles = menu_create();
         // (void)menu_init(m_run_cycles, 2u, items);
         // menu_set_name(m_run_cycles, "Battery cycles test");
-        static const char STR_RCYC0[] PROGMEM = "Options";
-        static const char STR_RCYC1[] PROGMEM = "STOP";
+        static const char STR_RCYC0[] PROGMEM = " ";
+        static const char STR_RCYC1[] PROGMEM = " ";
         static PGM_P const RCYC_ITEMS[] PROGMEM = {
             STR_RCYC0, STR_RCYC1};
         m_run_cycles = menu_create();
         (void)menu_init(m_run_cycles, 2u, RCYC_ITEMS);
         menu_set_name(m_run_cycles, PSTR(" --Btr cycles test--"));
+        static menu_softkey_cb_t const SK_BACK_OPTIONS_STOP_ACT_CYC[] PROGMEM = {action_soft_back, action_open_opt_cycles, action_open_stop_confirm};
+        menu_set_soft_keys(m_run_cycles, SK_BACK_OPTIONS_STOP, SK_BACK_OPTIONS_STOP_ACT_CYC);
     }
 
     /* OPTIONS: Battery test-Options (Back only) */
@@ -262,6 +307,7 @@ void ui_tree_init(void)
         (void)menu_init(m_opt_cycles, 0u, 0);
         // menu_set_name(m_opt_cycles, "Battery test-Options");
         menu_set_name(m_opt_cycles, PSTR("   -Btr test-Opts-"));
+        menu_set_soft_keys(m_opt_cycles, SK_BACK_ONLY, SK_BACK_ONLY_ACT);
     }
 
     /* MODAL: Stop confirm */
@@ -298,6 +344,7 @@ void ui_tree_init(void)
         m_run_resist = menu_create();
         (void)menu_init(m_run_resist, 2u, RRT_ITEMS);
         menu_set_name(m_run_resist, PSTR(" Resist. test (DC/AC)"));
+        menu_set_soft_keys(m_run_resist, SK_BACK_ACDC_STARTSTOP, SK_BACK_ACDC_STARTSTOP_ACT);
     }
 
     /* ---------- Logs stub ---------- */
@@ -306,6 +353,7 @@ void ui_tree_init(void)
         (void)menu_init(m_logs_stub, 0u, 0);
         // menu_set_name(m_logs_stub, "Logs");
         menu_set_name(m_logs_stub, PSTR("       -Logs-"));
+        menu_set_soft_keys(m_logs_stub, SK_BACK_ONLY, SK_BACK_ONLY_ACT);
     }
 
     /* ---------- Something else stub ---------- */
@@ -314,6 +362,7 @@ void ui_tree_init(void)
         (void)menu_init(m_something_stub, 0u, 0);
         // menu_set_name(m_something_stub, "Something else");
         menu_set_name(m_something_stub, PSTR("  -Something else-"));
+        menu_set_soft_keys(m_something_stub, SK_BACK_ONLY, SK_BACK_ONLY_ACT);
     }
 
     /* ====== Link the tree (submenus) ====== */
@@ -373,7 +422,7 @@ void ui_on_button(ui_button_t btn)
     {
         menu_action_t a = menu_enter_selected(m);
 
-        /* If it was ENTER/BACK, navigation already happened */
+        /* If it was ENTER/BACK/SOFTKEY, navigation already happened */
         if (a != MENU_ACTION_NONE)
         {
             return;

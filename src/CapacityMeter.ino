@@ -10,7 +10,9 @@
 #define BTN_MINUS_PIN 9 // Pin for MINUS button, PB1 (PCINT1)
 // #define BTN_OK_PIN     8 // Pin for OK button, PB0 (PCINT0)
 
-#define BTN_DEBOUNCE_MS 100u // Button debounce time in milliseconds
+#define BTN_DEBOUNCE_MS 30u      // Button debounce time in milliseconds
+#define BTN_REPEAT_DELAY_MS 2000u // Auto-repeat start delay (ms)
+#define BTN_REPEAT_MS 500u        // Auto-repeat period (ms)
 
 #define THRESHOLD_DW_HIGH 3000 // Upper discharge voltage threshold (3.0V)
 // #define THRESHOLD_DW_LOW 2800   // Lower voltage threshold (2.8V)
@@ -24,7 +26,7 @@ Adafruit_SSD1306 display(128, 64);
 INA226_t ina;
 
 bool relay_state = 0;
-uint32_t hist_time_elapse = 0;
+uint16_t hist_time_elapse = 0;
 
 // Pin pin = (Pin){ &PORTB, PB1 };
 // Btn btn;
@@ -32,6 +34,76 @@ uint32_t hist_time_elapse = 0;
 SoftTimer_t display_show_timer;
 SoftTimer_t my_timer;
 SoftTimer_t read_ina_timer;
+
+typedef struct
+{
+  uint8_t stable_level;   /* 1 = released, 0 = pressed */
+  uint8_t last_level;     /* last sampled level */
+  uint16_t last_change_ms;
+  uint16_t press_start_ms;
+  uint16_t last_repeat_ms;
+} Button_t;
+
+static Button_t g_btn_ok = {1u, 1u, 0u, 0u, 0u};
+static Button_t g_btn_plus = {1u, 1u, 0u, 0u, 0u};
+static Button_t g_btn_minus = {1u, 1u, 0u, 0u, 0u};
+
+static void button_fire(ui_button_t btn)
+{
+  if (btn == UI_BTN_OK)
+  {
+    PORTB ^= (1 << PB5); // Toggle PB5, Ard pin 13
+    relay_state = true;
+  }
+  ui_on_button(btn);
+}
+
+static void button_update(Button_t *b, uint8_t raw_level, uint16_t now_ms, uint8_t allow_repeat, ui_button_t btn)
+{
+  if (raw_level != b->last_level)
+  {
+    b->last_level = raw_level;
+    b->last_change_ms = now_ms;
+  }
+
+  if ((uint16_t)(now_ms - b->last_change_ms) >= (uint16_t)BTN_DEBOUNCE_MS)
+  {
+    if (raw_level != b->stable_level)
+    {
+      b->stable_level = raw_level;
+      if (raw_level == 0u)
+      {
+        b->press_start_ms = now_ms;
+        b->last_repeat_ms = now_ms;
+        button_fire(btn);
+      }
+    }
+  }
+
+  if (allow_repeat && b->stable_level == 0u)
+  {
+    if ((uint16_t)(now_ms - b->press_start_ms) >= (uint16_t)BTN_REPEAT_DELAY_MS)
+    {
+      if ((uint16_t)(now_ms - b->last_repeat_ms) >= (uint16_t)BTN_REPEAT_MS)
+      {
+        b->last_repeat_ms = now_ms;
+        button_fire(btn);
+      }
+    }
+  }
+}
+
+static void buttons_update(uint16_t now_ms)
+{
+  uint8_t raw_ok = (PIND & (1 << PD2)) ? 1u : 0u;
+  uint8_t raw_plus = (PIND & (1 << PD7)) ? 1u : 0u;
+  uint8_t raw_minus = (PINB & (1 << PB1)) ? 1u : 0u;
+
+  button_update(&g_btn_ok, raw_ok, now_ms, 0u, UI_BTN_OK);
+  button_update(&g_btn_plus, raw_plus, now_ms, 1u, UI_BTN_PLUS);
+  button_update(&g_btn_minus, raw_minus, now_ms, 1u, UI_BTN_MINUS);
+
+}
 
 static void ui_render_menu(Menu_t *m);
 void computeData(int16_t abs_current);
@@ -109,6 +181,7 @@ void loop()
   uint16_t voltage = 0;
   int16_t current = 0;
   int16_t abs_current = 0;
+  uint16_t now_ms = (uint16_t)actmillis_time;
 
   if (time_elapsed_flag(&read_ina_timer))
   {
@@ -123,8 +196,8 @@ void loop()
   //  loop_time = actmillis_time - prev_loop_millis;
   //  if (loop_time > 0) {
   //    prev_loop_millis = actmillis_time;
-  //    float tempCapacity = (float)abs_current * ((float)loop_time / 3600000);
-  //    capacity += tempCapacity;
+  //    int32_t delta_uah = (int32_t)abs_current * (int32_t)loop_time / 3600;
+  //    capacity_uah += delta_uah;
   //  }
   // sei();
 
@@ -143,6 +216,8 @@ void loop()
     computeData(abs_current);
   }
 
+  buttons_update(now_ms);
+
   if (abs_current > 1)
   {
     total_active_curr_millis += actmillis_time - prev_active_curr_millis;
@@ -156,8 +231,8 @@ void computeData(int16_t abs_current)
   loop_time = actmillis_time - prev_loop_millis;
   prev_loop_millis = actmillis_time;
 
-  float tempCapacity = (float)abs_current * ((float)loop_time / 3600000); // mAh calculation 
-  capacity += tempCapacity; // accumulate capacity in mAh
+  int32_t delta_uah = (int32_t)abs_current * (int32_t)loop_time / 3600; // uAh
+  capacity_uah += delta_uah;
 }
 
 bool hystereis_relay_control(uint16_t volt, int16_t curr)
@@ -196,17 +271,7 @@ void init_int0_interrupt()
 // Interrupt Service Routine for INT0 from external pin (PD2)
 ISR(INT0_vect)
 {
-  if ((millis_time - last_time_btn_ok) < BTN_DEBOUNCE_MS)
-    return;
-  if (PIND & (1 << PD2))
-    return;
-
-  last_time_btn_ok = millis_time;
-  PORTB ^= (1 << PB5); // Toggle PB5, Ard pin 13
-  relay_state = true;
-
-  /* in future need to use a g_ok_event flag to not overload isr */
-  ui_on_button(UI_BTN_OK); // Handle OK button press for display
+  /* debounced in main loop */
 }
 //-----------------------------------------------------------------------------
 void init_pcint_interrupts()
@@ -228,49 +293,11 @@ void init_pcint_interrupts()
 
 ISR(PCINT0_vect)
 {
-  static uint8_t prev_pinb = 0xFF;               /* previous sampled PINB state */
-  uint8_t pinb = PINB;                           /* current PINB state */
-  uint8_t changed = (uint8_t)(pinb ^ prev_pinb); /* changed bits */
-
-  /* Debounce time gate */
-  if ((millisT() - last_time_btn_dw) < BTN_DEBOUNCE_MS)
-  {
-    prev_pinb = pinb;
-    return;
-  }
-
-  if (changed & (1 << PB1))
-  { /* Check if PB1 changed (not other one in group)*/
-    /* Falling edge: was HIGH, now LOW */
-    if ((prev_pinb & (1 << PB1)) && !(pinb & (1 << PB1)))
-    {
-      last_time_btn_dw = millisT();
-      ui_on_button(UI_BTN_PLUS);
-    }
-  }
-  prev_pinb = pinb;
+  /* debounced in main loop */
 }
 ISR(PCINT2_vect)
 {
-  static uint8_t prev_pind = 0xFF;
-  uint8_t pind = PIND;
-  uint8_t changed = (uint8_t)(pind ^ prev_pind);
-
-  if ((millisT() - last_time_btn_up) < BTN_DEBOUNCE_MS)
-  {
-    prev_pind = pind;
-    return;
-  }
-
-  if (changed & (1 << PD7))
-  { /* Check if PD7 changed (not other pin in group) */
-    if ((prev_pind & (1 << PD7)) && !(pind & (1 << PD7)))
-    { /* check for falling edge */
-      last_time_btn_up = millisT();
-      ui_on_button(UI_BTN_MINUS);
-    }
-  }
-  prev_pind = pind;
+  /* debounced in main loop */
 }
 
 //-----------------------------------------------------------------------------
@@ -373,7 +400,10 @@ static void ui_render_soft_menu(Menu_t *m)
   const uint8_t max = menu_get_max_items(m);
   if (max == 0u)
   {
-    return;
+    if (menu_get_total_selectable(m) == 0u)
+    {
+      return;
+    }
   }
 
   /* Skip root menu to keep the bottom line clean */
@@ -383,25 +413,13 @@ static void ui_render_soft_menu(Menu_t *m)
   }
 
   char buf[12];
-  PGM_P left_p = 0;
-  PGM_P center_p = 0;
-  PGM_P right_p = 0;
-  uint8_t left_len = 0u;
-  uint8_t center_len = 0u;
-  uint8_t right_len = 0u;
-
-  if (max >= 2u)
-  {
-    left_p = menu_get_item_name(m, 1u);
-    left_len = oled_len_pgm(left_p, (uint8_t)(sizeof(buf) - 1u));
-  }
-  if (max >= 3u)
-  {
-    center_p = menu_get_item_name(m, 2u);
-    center_len = oled_len_pgm(center_p, (uint8_t)(sizeof(buf) - 1u));
-  }
-  right_p = menu_get_item_name(m, max);
-  right_len = oled_len_pgm(right_p, (uint8_t)(sizeof(buf) - 1u));
+  PGM_P left_p = menu_get_soft_key(m, 1u);
+  PGM_P center_p = menu_get_soft_key(m, 2u);
+  PGM_P right_p = menu_get_soft_key(m, 3u);
+  uint8_t left_len = oled_len_pgm(left_p, (uint8_t)(sizeof(buf) - 1u));
+  uint8_t center_len = oled_len_pgm(center_p, (uint8_t)(sizeof(buf) - 1u));
+  uint8_t right_len = oled_len_pgm(right_p, (uint8_t)(sizeof(buf) - 1u));
+  uint8_t sel_pos = menu_get_selected_softkey_pos(m);
 
   display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
   const int16_t y = 56;
@@ -410,7 +428,10 @@ static void ui_render_soft_menu(Menu_t *m)
   {
     oled_copy_pgm(left_p, buf, sizeof(buf));
     display.setCursor(0, y);
+    if (sel_pos == 1u)
+      display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
     display.print(buf);
+    display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
   }
 
   int16_t right_x = 128 - (int16_t)right_len * 6;
@@ -422,7 +443,10 @@ static void ui_render_soft_menu(Menu_t *m)
     }
     oled_copy_pgm(right_p, buf, sizeof(buf));
     display.setCursor((uint8_t)right_x, y);
+    if (sel_pos == 3u)
+      display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
     display.print(buf);
+    display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
   }
 
   if (center_len > 0u)
@@ -438,7 +462,10 @@ static void ui_render_soft_menu(Menu_t *m)
     {
       oled_copy_pgm(center_p, buf, sizeof(buf));
       display.setCursor((uint8_t)center_x, y);
+      if (sel_pos == 2u)
+        display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
       display.print(buf);
+      display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
     }
   }
 }
@@ -462,7 +489,7 @@ static void ui_render_menu(Menu_t *m)
   display.println();
 
   uint8_t max = menu_get_max_items(m);
-  uint8_t sel = menu_get_selected(m);
+  uint8_t sel_item = menu_get_selected_item(m);
 
   // for (uint8_t i = 1u; i <= max; i++)
   // {
@@ -477,28 +504,30 @@ static void ui_render_menu(Menu_t *m)
   const uint8_t visible = 5u;
   if (max > 0u)
   {
+    uint8_t list_max = max;
     uint8_t start = 1u;
-    uint8_t end = max;
-    if (max > visible)
+    uint8_t end = list_max;
+    if (list_max > visible)
     {
-      if (sel <= 3u)
+      uint8_t sel_scroll = (sel_item == 0u) ? 1u : sel_item;
+      if (sel_scroll <= 3u)
       {
         start = 1u;
       }
-      else if (sel >= (max - 1u))
+      else if (sel_scroll >= (list_max - 1u))
       {
-        start = max - (visible - 1u);
+        start = list_max - (visible - 1u);
       }
       else
       {
-        start = sel - 2u;
+        start = sel_scroll - 2u;
       }
       end = start + visible - 1u;
     }
     display.setCursor(0, 16);
     for (uint8_t i = start; i <= end; i++)
     {
-      if (i == sel)
+      if (i == sel_item)
       {
         display.setTextColor(SSD1306_BLACK, SSD1306_WHITE); // Inverted color for selected item
       }
@@ -547,7 +576,7 @@ static void ui_render_menu(Menu_t *m)
 
 //   display.setCursor(60, 32);
 //   display.print("Cap:");
-//   display.print((uint16_t)capacity);
+//   display.print((uint16_t)capacity_uah);
 //   display.println("mAh");
 
 //   display.setCursor(0, 40);

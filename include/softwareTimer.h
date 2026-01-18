@@ -19,7 +19,7 @@ typedef enum
 /* Timer structure */
 typedef struct
 {
-  uint32_t interval_ms;   /* Timer interval when is triggered */
+  uint16_t interval_ms;   /* Timer interval when is triggered */
   uint32_t elapsed_time;  /* Elapsed time */
   bool elapsed_time_flag; /* Flag set when the interval has elapsed */
   TimerState_t state;     /* Current state of the timer (stopped or running) */
@@ -35,7 +35,7 @@ typedef struct
  * @param intervalMs - Interval in milliseconds
  * @param callback - Callback function pointer (NULL for no callback)
  */
-void soft_timer_init(SoftTimer_t *timer, uint32_t interval_ms, void (*callback)(void));
+void soft_timer_init(SoftTimer_t *timer, uint16_t interval_ms, void (*callback)(void));
 
 /*
  * Update the timer, called from the ISR every 1 ms
