@@ -59,17 +59,17 @@ void setup()
 { 
   
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  if (!display_if_init())
+  if (!display_init())
   {
     Serial.println(F("SSD1306 allocation failed"));
     errFunc();
   }
-  display_if_begin_frame();
+  display_frame_begin();
   do
   {
-    display_if_clear();
-  } while (display_if_next_page());
-  display_if_end_frame();
+    display_clear();
+  } while (display_frame_next_page());
+  display_frame_end();
 
 
 
@@ -212,7 +212,7 @@ void init_int0_interrupt()
 // Interrupt Service Routine for INT0 from external pin (PD2)
 ISR(INT0_vect)
 {
-  /* handled by 1ms sampler */
+  /* now handled by 1ms sampler */
 }
 //-----------------------------------------------------------------------------
 void init_pcint_interrupts()
@@ -227,11 +227,11 @@ void init_pcint_interrupts()
 
 ISR(PCINT0_vect)
 {
-  /* handled by 1ms sampler */
+  /* now handled by 1ms sampler */
 }
 ISR(PCINT2_vect)
 {
-  /* handled by 1ms sampler */
+  /* now handled by 1ms sampler */
 }
 
 //-----------------------------------------------------------------------------
@@ -285,10 +285,38 @@ static void oled_print_pgm(PGM_P s)
 {
   if (!s)
   {
-    display_if_println_pgm(PSTR("NULL"));
+    display_println_pgm(PSTR("NULL"));
     return;
   }
-  display_if_println_pgm(s);
+  display_println_pgm(s);
+}
+
+static void u16_to_dec(uint16_t v, char *buf, uint8_t buf_size)
+{
+  if (buf == 0 || buf_size == 0u)
+  {
+    return;
+  }
+  char tmp[6];
+  uint8_t i = 0u;
+  if (v == 0u)
+  {
+    tmp[i++] = '0';
+  }
+  else
+  {
+    while (v > 0u && i < (uint8_t)sizeof(tmp))
+    {
+      tmp[i++] = (char)('0' + (v % 10u));
+      v /= 10u;
+    }
+  }
+  uint8_t out = 0u;
+  while (i > 0u && (out + 1u) < buf_size)
+  {
+    buf[out++] = tmp[--i];
+  }
+  buf[out] = '\0';
 }
 static uint8_t oled_copy_pgm(PGM_P s, char *buf, uint8_t buf_size)
 {
@@ -333,7 +361,7 @@ static uint8_t oled_len_pgm(PGM_P s, uint8_t max_len)
 }
 static void ui_render_soft_menu(Menu_t *m)
 {
-  const uint8_t max = menu_get_max_items(m);
+  const uint8_t max = menu_get_list_count(m);
   if (max == 0u)
   {
     if (menu_get_total_selectable(m) == 0u)
@@ -348,97 +376,122 @@ static void ui_render_soft_menu(Menu_t *m)
     return;
   }
 
-  char buf[12];
-  PGM_P left_p = menu_get_soft_key(m, 1u);
-  PGM_P center_p = menu_get_soft_key(m, 2u);
-  PGM_P right_p = menu_get_soft_key(m, 3u);
-  uint8_t left_len = oled_len_pgm(left_p, (uint8_t)(sizeof(buf) - 1u));
-  uint8_t center_len = oled_len_pgm(center_p, (uint8_t)(sizeof(buf) - 1u));
-  uint8_t right_len = oled_len_pgm(right_p, (uint8_t)(sizeof(buf) - 1u));
+  char left_buf[12];
+  char center_buf[12];
+  char right_buf[12];
+  uint8_t left_len = menu_get_soft_key_text(m, 1u, left_buf, sizeof(left_buf));
+  uint8_t center_len = menu_get_soft_key_text(m, 2u, center_buf, sizeof(center_buf));
+  uint8_t right_len = menu_get_soft_key_text(m, 3u, right_buf, sizeof(right_buf));
   uint8_t sel_pos = menu_get_selected_softkey_pos(m);
 
   const int16_t y = 56;
 
   if (left_len > 0u)
   {
-    oled_copy_pgm(left_p, buf, sizeof(buf));
-    display_if_set_cursor(0, (uint8_t)y);
+    display_set_cursor(0, (uint8_t)y);
     if (sel_pos == 1u)
-      display_if_set_invert(1u);
+      display_set_invert(1u);
     else
-      display_if_set_invert(0u);
-    display_if_print(buf);
-    display_if_set_invert(0u);
+      display_set_invert(0u);
+    display_print(left_buf);
+    display_set_invert(0u);
   }
 
-  int16_t right_x = 128 - (int16_t)right_len * 6;
+  uint8_t char_w = display_char_width_px();
+  int16_t right_x = 128 - (int16_t)right_len * char_w;
   if (right_len > 0u)
   {
     if (right_x < 0)
     {
       right_x = 0;
     }
-    oled_copy_pgm(right_p, buf, sizeof(buf));
-    display_if_set_cursor((uint8_t)right_x, (uint8_t)y);
+    display_set_cursor((uint8_t)right_x, (uint8_t)y);
     if (sel_pos == 3u)
-      display_if_set_invert(1u);
+      display_set_invert(1u);
     else
-      display_if_set_invert(0u);
-    display_if_print(buf);
-    display_if_set_invert(0u);
+      display_set_invert(0u);
+    display_print(right_buf);
+    display_set_invert(0u);
   }
 
   if (center_len > 0u)
   {
-    int16_t center_x = (128 - (int16_t)center_len * 6) / 2;
-    if (center_x < 0)
+    int16_t center_x;
+    if (left_len > 0u && right_len > 0u)
     {
-      center_x = 0;
-    }
-    int16_t left_end = (int16_t)left_len * 6;
-    int16_t center_end = center_x + (int16_t)center_len * 6;
-    if (center_x > (left_end + 2) && center_end < (right_x - 2))
-    {
-      oled_copy_pgm(center_p, buf, sizeof(buf));
-      display_if_set_cursor((uint8_t)center_x, (uint8_t)y);
-      if (sel_pos == 2u)
-        display_if_set_invert(1u);
+      int16_t left_end = (int16_t)left_len * char_w;
+      int16_t space = right_x - left_end;
+      if (space < (int16_t)center_len * char_w)
+        center_x = left_end + 1;
       else
-        display_if_set_invert(0u);
-      display_if_print(buf);
-      display_if_set_invert(0u);
+        center_x = left_end + (space - (int16_t)center_len * char_w) / 2;
     }
+    else
+    {
+      center_x = (128 - (int16_t)center_len * char_w) / 2;
+    }
+    if (center_x < 0)
+      center_x = 0;
+    display_set_cursor((uint8_t)center_x, (uint8_t)y);
+    if (sel_pos == 2u)
+      display_set_invert(1u);
+    else
+      display_set_invert(0u);
+    display_print(center_buf);
+    display_set_invert(0u);
   }
 }
 static void ui_render_menu(Menu_t *m)
 {
-  display_if_begin_frame();
+  display_frame_begin();
   do
   {
-    display_if_clear();
+    display_clear();
 
-    display_if_set_cursor(0, 0);
-    display_if_set_invert(0u);
+    display_set_cursor(0, 0);
+    display_set_invert(0u);
     oled_print_pgm(menu_get_name(m));
-    if (menu_get_status_left(m) != NULL || menu_get_status_right(m) != NULL)
+    if (menu_get_status_left_prefix(m) != NULL || menu_get_status_left_value(m) != NULL ||
+        menu_get_status_right_prefix(m) != NULL || menu_get_status_right_value(m) != NULL)
     {
       // todo: if this menu has states to show. maximum 2 states, one in the left, one in the right
-      display_if_newline();
+      display_newline();
     }
-    display_if_newline();
+    display_newline();
 
-    uint8_t max = menu_get_max_items(m);
+    uint8_t list_count = menu_get_list_count(m);
+    uint8_t leaf_count = menu_get_leaf_row_count(m);
     uint8_t sel_item = menu_get_selected_item(m);
+    uint8_t sel_leaf = menu_get_selected_leaf_row(m);
+    uint8_t sel_row = 0u;
+    if (sel_item > 0u)
+    {
+      sel_row = sel_item;
+    }
+    else if (sel_leaf > 0u)
+    {
+      sel_row = (uint8_t)(list_count + sel_leaf);
+    }
 
     const uint8_t visible = 5u;
-    if (max > 0u)
+    const uint8_t total_rows = (uint8_t)(list_count + leaf_count);
+    if (menu_get_leaf_render(m) != NULL)
     {
-      uint8_t list_max = max;
+      menu_leaf_render_fn_t render_fn = menu_get_leaf_render(m);
+      display_set_cursor(0, 16);
+      if (render_fn)
+      {
+        render_fn();
+      }
+    }
+    else if (total_rows > 0u)
+    {
+      uint8_t list_max = total_rows;
       uint8_t start = 1u;
       uint8_t end = list_max;
       if (list_max > visible)
       {
-        uint8_t sel_scroll = (sel_item == 0u) ? 1u : sel_item;
+        uint8_t sel_scroll = (sel_row == 0u) ? 1u : sel_row;
         if (sel_scroll <= 3u)
         {
           start = 1u;
@@ -453,17 +506,72 @@ static void ui_render_menu(Menu_t *m)
         }
         end = start + visible - 1u;
       }
-      display_if_set_cursor(0, 16);
+      display_set_cursor(0, 16);
       for (uint8_t i = start; i <= end; i++)
       {
-        display_if_set_invert((i == sel_item) ? 1u : 0u);
-        oled_print_pgm(menu_get_item_name(m, i));
+        if (i <= list_count)
+        {
+          display_set_invert((i == sel_item) ? 1u : 0u);
+          PGM_P label = menu_get_list_item_label(m, i);
+          if (label)
+          {
+            oled_print_pgm(label);
+          }
+          else
+          {
+            display_newline();
+          }
+        }
+        else
+        {
+          uint8_t leaf_idx = (uint8_t)(i - list_count);
+          uint8_t is_selected = (leaf_idx == sel_leaf) ? 1u : 0u;
+          uint8_t is_edit = (is_selected && menu_is_edit_mode(m)) ? 1u : 0u;
+          uint8_t is_editable = menu_leaf_row_is_editable(m, leaf_idx);
+          uint16_t val = menu_get_leaf_row_value(m, leaf_idx);
+          char val_buf[8];
+          u16_to_dec(val, val_buf, sizeof(val_buf));
+          PGM_P label = menu_get_leaf_row_label(m, leaf_idx);
+
+          if (is_selected && is_editable && !is_edit)
+          {
+            display_set_invert(1u);
+            if (label)
+            {
+              display_print_pgm(label);
+            }
+            display_print(" ");
+            display_print(val_buf);
+            display_set_invert(0u);
+            display_newline();
+          }
+          else
+          {
+            display_set_invert(0u);
+            if (label)
+            {
+              display_print_pgm(label);
+            }
+            display_print(" ");
+            if (is_selected && is_editable && is_edit)
+            {
+              display_set_invert(1u);
+              display_print(val_buf);
+              display_set_invert(0u);
+            }
+            else
+            {
+              display_print(val_buf);
+            }
+            display_newline();
+          }
+        }
       }
     }
 
     ui_render_soft_menu(m);
-  } while (display_if_next_page());
-  display_if_end_frame();
+  } while (display_frame_next_page());
+  display_frame_end();
 }
 
 /*------------------------------------------------------------------*/

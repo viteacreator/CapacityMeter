@@ -16,17 +16,18 @@
 #define DISPLAY_BACKEND_ADAFRUIT
 #endif
 
-bool display_if_init(void);
-void display_if_begin_frame(void);
-bool display_if_next_page(void);
-void display_if_end_frame(void);
-void display_if_clear(void);
-void display_if_set_cursor(uint8_t x, uint8_t y);
-void display_if_set_invert(uint8_t enable);
-void display_if_print(const char *s);
-void display_if_print_pgm(PGM_P s);
-void display_if_println(const char *s);
-void display_if_println_pgm(PGM_P s);
-void display_if_newline(void);
+bool display_init(void);
+void display_frame_begin(void);
+bool display_frame_next_page(void);
+void display_frame_end(void);
+void display_clear(void);
+void display_set_cursor(uint8_t x, uint8_t y);
+void display_set_invert(uint8_t enable);
+void display_print(const char *s);
+void display_print_pgm(PGM_P s);
+void display_println(const char *s);
+void display_println_pgm(PGM_P s);
+void display_newline(void);
+uint8_t display_char_width_px(void);
 
 #endif /* DISPLAY_IF_H */

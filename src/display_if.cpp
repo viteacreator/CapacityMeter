@@ -45,7 +45,7 @@ static void advance_cursor(uint8_t chars)
   s_cursor_x = (uint8_t)(s_cursor_x + (uint8_t)(chars * 6u));
 }
 
-bool display_if_init(void)
+bool display_init(void)
 {
 #if defined(DISPLAY_BACKEND_U8G2)
   s_u8g2.setI2CAddress((uint8_t)(SCREEN_ADDRESS << 1));
@@ -64,14 +64,14 @@ bool display_if_init(void)
 #endif
 }
 
-void display_if_begin_frame(void)
+void display_frame_begin(void)
 {
 #if defined(DISPLAY_BACKEND_U8G2)
   s_u8g2.firstPage();
 #endif
 }
 
-bool display_if_next_page(void)
+bool display_frame_next_page(void)
 {
 #if defined(DISPLAY_BACKEND_U8G2)
   return s_u8g2.nextPage();
@@ -80,14 +80,14 @@ bool display_if_next_page(void)
 #endif
 }
 
-void display_if_end_frame(void)
+void display_frame_end(void)
 {
 #if defined(DISPLAY_BACKEND_ADAFRUIT)
   s_display.display();
 #endif
 }
 
-void display_if_clear(void)
+void display_clear(void)
 {
 #if defined(DISPLAY_BACKEND_U8G2)
   s_u8g2.clearBuffer();
@@ -99,7 +99,7 @@ void display_if_clear(void)
   s_invert = 0u;
 }
 
-void display_if_set_cursor(uint8_t x, uint8_t y)
+void display_set_cursor(uint8_t x, uint8_t y)
 {
   s_cursor_x = x;
   s_cursor_y = y;
@@ -108,7 +108,7 @@ void display_if_set_cursor(uint8_t x, uint8_t y)
 #endif
 }
 
-void display_if_set_invert(uint8_t enable)
+void display_set_invert(uint8_t enable)
 {
   s_invert = enable ? 1u : 0u;
 #if defined(DISPLAY_BACKEND_ADAFRUIT)
@@ -167,33 +167,42 @@ static void draw_text_pgm(PGM_P s)
   advance_cursor(len);
 }
 
-void display_if_print(const char *s)
+void display_print(const char *s)
 {
   draw_text_ram(s);
 }
 
-void display_if_print_pgm(PGM_P s)
+void display_print_pgm(PGM_P s)
 {
   draw_text_pgm(s);
 }
 
-void display_if_println(const char *s)
+void display_println(const char *s)
 {
   draw_text_ram(s);
-  display_if_newline();
+  display_newline();
 }
 
-void display_if_println_pgm(PGM_P s)
+void display_println_pgm(PGM_P s)
 {
   draw_text_pgm(s);
-  display_if_newline();
+  display_newline();
 }
 
-void display_if_newline(void)
+void display_newline(void)
 {
   s_cursor_x = 0u;
   s_cursor_y = (uint8_t)(s_cursor_y + 8u);
 #if defined(DISPLAY_BACKEND_ADAFRUIT)
   s_display.setCursor(s_cursor_x, s_cursor_y);
+#endif
+}
+
+uint8_t display_char_width_px(void)
+{
+#if defined(DISPLAY_BACKEND_U8G2)
+  return 5u;
+#else
+  return 6u;
 #endif
 }
