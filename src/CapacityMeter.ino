@@ -1,5 +1,6 @@
 #include "main.h"
 #include "button_input.h"
+#include "ina_values.h"
 
 /* Buttons are INPUT_PULLUP -> pressed = LOW */
 /** todo: its better in future to use:
@@ -10,7 +11,6 @@
 #define BTN_OK_PIN 2    // Pin for OK button, PD2 (INT0)
 #define BTN_MINUS_PIN 9 // Pin for MINUS button, PB1 (PCINT1)
 // #define BTN_OK_PIN     8 // Pin for OK button, PB0 (PCINT0)
-
 
 #define THRESHOLD_DW_HIGH 3000 // Upper discharge voltage threshold (3.0V)
 // #define THRESHOLD_DW_LOW 2800   // Lower voltage threshold (2.8V)
@@ -31,6 +31,12 @@ uint32_t prev_active_curr_millis = 0;
 uint32_t total_active_curr_millis = 0;
 volatile uint32_t millis_time = 0;
 uint32_t loop_time = 0;
+
+extern "C"
+{
+  volatile uint16_t g_ina_voltage_mv = 0;
+  volatile int16_t g_ina_current_ma = 0;
+}
 
 // Pin pin = (Pin){ &PORTB, PB1 };
 // Btn btn;
@@ -56,8 +62,8 @@ void computeData(int16_t abs_current);
 /* main functions                                                   */
 /*------------------------------------------------------------------*/
 void setup()
-{ 
-  
+{
+
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!display_init())
   {
@@ -70,8 +76,6 @@ void setup()
     display_clear();
   } while (display_frame_next_page());
   display_frame_end();
-
-
 
   init_int0_interrupt();
   init_pcint_interrupts();
@@ -120,7 +124,11 @@ void setup()
   // pinMode(9, INPUT_PULLUP);
   // Set PB5 (Pin 13 on Arduino Uno) as output
   DDRB |= (1 << PB5);
-  DDRD |= (1 << PD3); // for relay
+  DDRD |= (1 << PD3) | (1 << PD5) | (1 << PD6); // relay + charge/discharge control
+
+  // init pin charge as HIGH and discharge pin as LOW
+  PORTD |= (1 << PD6);           // init pin charge as HIGH
+  PORTD &= (uint8_t)~(1 << PD5); // init pin discharge as LOW
 }
 //-----------------------------------------------------------------------------
 void loop()
@@ -133,8 +141,10 @@ void loop()
   if (time_elapsed_flag(&read_ina_timer))
   {
     voltage = ina226_get_mili_voltage(&ina);
-    current = ina226_get_mili_current(&ina);
+    current = (int16_t)ina226_get_mili_current(&ina);
     abs_current = abs(current);
+    g_ina_voltage_mv = voltage;
+    g_ina_current_ma = current;
   }
   hystereis_relay_control(voltage, abs_current);
   digitalWrite(RELAYPIN, relay_state);
@@ -151,11 +161,11 @@ void loop()
   if (time_elapsed_flag(&display_show_timer))
   {
     // toggleLed();
-    //prev_time_test = actmillis_time;
+    // prev_time_test = actmillis_time;
     // displayWrite();
     ui_render_menu(g_current_menu);
-    //time_test = actmillis_time - prev_time_test;
-    // toggleLed();
+    // time_test = actmillis_time - prev_time_test;
+    //  toggleLed();
   }
 
   if (time_elapsed_flag(&read_ina_timer))

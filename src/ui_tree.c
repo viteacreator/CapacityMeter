@@ -1,6 +1,8 @@
 /* ui_tree.c */
 #include "ui_tree.h"
 #include "menu_internal.h"
+#include "ina_values.h"
+#include <avr/io.h>
 
 /* ====== Menu pointers (screens) ====== */
 static Menu_t m_main_obj;
@@ -33,7 +35,8 @@ static void action_stop_cycles(void);
 static void action_toggle_resist_mode(void);
 static void action_toggle_resist_start_stop(void);
 static void action_stop_simple_run(void);
-static void action_start_charging(void);
+static void action_toggle_discharge(void);
+static void action_toggle_charging(void);
 static void action_soft_back(void);
 static void action_open_opt_cdc(void);
 static void action_open_opt_cycles(void);
@@ -52,14 +55,14 @@ static const soft_key_t SK_BACK_OPTIONS_STOP[] PROGMEM = {
     {SK_BACK, action_soft_back, 0},
     {SK_OPTIONS, action_open_opt_cdc, 0},
     {SK_STARTSTOP, action_stop_simple_run, 0}};
-static const soft_key_t SK_BACK_STOP[] PROGMEM = {
+static const soft_key_t SK_BACK_TOGGLE_DISCH[] PROGMEM = {
     {SK_BACK, action_soft_back, 0},
     {0, 0, 0},
-    {SK_STARTSTOP, action_stop_simple_run, 0}};
-static const soft_key_t SK_BACK_START[] PROGMEM = {
+    {SK_STARTSTOP, action_toggle_discharge, 2}};
+static const soft_key_t SK_BACK_TOGGLE_CHG[] PROGMEM = {
     {SK_BACK, action_soft_back, 0},
     {0, 0, 0},
-    {SK_STARTSTOP, action_start_charging, 0}};
+    {SK_STARTSTOP, action_toggle_charging, 2}};
 static const soft_key_t SK_BACK_ACDC_STARTSTOP[] PROGMEM = {
     {SK_BACK, action_soft_back, 0},
     {SK_ACDC, action_toggle_resist_mode, 1},
@@ -68,6 +71,28 @@ static const soft_key_t SK_BACK_OPTIONS_STOP_CYC[] PROGMEM = {
     {SK_BACK, action_soft_back, 0},
     {SK_OPTIONS, action_open_opt_cycles, 0},
     {SK_STARTSTOP, action_open_stop_confirm, 0}};
+
+static uint16_t ui_get_ina_voltage_mv(void)
+{
+    return g_ina_voltage_mv;
+}
+
+static uint16_t ui_get_ina_current_ma(void)
+{
+    int16_t cur = g_ina_current_ma;
+    if (cur < 0)
+    {
+        cur = (int16_t)(-cur);
+    }
+    return (uint16_t)cur;
+}
+
+static const char STR_INA_VOLT[] PROGMEM = "U[mV]";
+static const char STR_INA_CURR[] PROGMEM = "I[mA]";
+
+static const leaf_context_t INA_LEAF_ROWS[] PROGMEM = {
+    {STR_INA_VOLT, ui_get_ina_voltage_mv, 0, 0},
+    {STR_INA_CURR, ui_get_ina_current_ma, 0, 0}};
 
 /* ====== Leaf actions (connect UI -> test engine here) ====== */
 
@@ -92,9 +117,30 @@ static void action_stop_simple_run(void)
     /* TODO: stop current simple test run */
 }
 
-static void action_start_charging(void)
+static void action_toggle_discharge(void)
 {
-    /* TODO: start charging sequence (when State=Finished) */
+    uint8_t state = g_current_menu->soft_key_state[2];
+    if (state == 1u)
+    {
+        PORTD &= (uint8_t)~(1u << PD5);
+    }
+    else
+    {
+        PORTD |= (uint8_t)(1u << PD5);
+    }
+}
+
+static void action_toggle_charging(void)
+{
+    uint8_t state = g_current_menu->soft_key_state[2];
+    if (state == 1u)
+    {
+        PORTD |= (uint8_t)(1u << PD6);
+    }
+    else
+    {
+        PORTD &= (uint8_t)~(1u << PD6);
+    }
 }
 
 static void action_soft_back(void)
@@ -143,7 +189,7 @@ static void ui_handle_leaf(Menu_t *menu, uint8_t selected_1based)
         /* Items: 1=STOP (leaf) */
         if (selected_1based == 1u)
         {
-            action_stop_simple_run();
+            action_toggle_discharge();
         }
         return;
     }
@@ -153,7 +199,7 @@ static void ui_handle_leaf(Menu_t *menu, uint8_t selected_1based)
         /* Items: 1=Start (leaf) */
         if (selected_1based == 1u)
         {
-            action_start_charging();
+            action_toggle_charging();
         }
         return;
     }
@@ -244,14 +290,8 @@ static const menu_context_t MAIN_ROWS[] PROGMEM = {
         // m_run_cdc = menu_create();
         // (void)menu_init_list(m_run_cdc, 2u, items);
         // menu_set_name(m_run_cdc, "Chg-Disch-Chg");
-        static const char STR_RCDC0[] PROGMEM = " ";
-        static const char STR_RCDC1[] PROGMEM = " ";
-        static const menu_context_t RCDC_ROWS[] PROGMEM = {
-            {STR_RCDC0, &m_opt_cdc_obj},
-            {STR_RCDC1, 0}};
-
         menu_init(m_run_cdc);
-        (void)menu_set_menu_rows(m_run_cdc, sizeof(RCDC_ROWS) / sizeof(RCDC_ROWS[0]), RCDC_ROWS);
+        (void)menu_set_leaf_rows(m_run_cdc, sizeof(INA_LEAF_ROWS) / sizeof(INA_LEAF_ROWS[0]), INA_LEAF_ROWS);
         menu_set_name(m_run_cdc, PSTR("   -Chg-Disch-Chg-"));
         (void)menu_set_soft_keys(m_run_cdc, SK_BACK_OPTIONS_STOP);
     }
@@ -262,6 +302,7 @@ static const menu_context_t MAIN_ROWS[] PROGMEM = {
         // menu_set_name(m_opt_cdc, "Chg-Disch-Chg-Options");
         menu_set_name(m_opt_cdc, PSTR(" -Chg-Disch-Chg-Opts-"));
         (void)menu_set_soft_keys(m_opt_cdc, SK_BACK_ONLY);
+        m_opt_cdc->prev_menu = m_run_cdc;
     }
 
     /* RUN: Discharging */
@@ -272,14 +313,10 @@ static const menu_context_t MAIN_ROWS[] PROGMEM = {
         // m_run_disch = menu_create();
         // (void)menu_init_list(m_run_disch, 1u, items);
         // menu_set_name(m_run_disch, "Discharging");
-        static const char STR_RD0[] PROGMEM = " ";
-        static const menu_context_t RD_ROWS[] PROGMEM = {
-            {STR_RD0, 0}};
-
         menu_init(m_run_disch);
-        (void)menu_set_menu_rows(m_run_disch, sizeof(RD_ROWS) / sizeof(RD_ROWS[0]), RD_ROWS);
+        (void)menu_set_leaf_rows(m_run_disch, sizeof(INA_LEAF_ROWS) / sizeof(INA_LEAF_ROWS[0]), INA_LEAF_ROWS);
         menu_set_name(m_run_disch, PSTR("    -Discharging-"));
-        (void)menu_set_soft_keys(m_run_disch, SK_BACK_STOP);
+        (void)menu_set_soft_keys(m_run_disch, SK_BACK_TOGGLE_DISCH);
     }
 
     /* RUN: Charging (Finished -> Start) */
@@ -290,14 +327,10 @@ static const menu_context_t MAIN_ROWS[] PROGMEM = {
         // m_run_chg = menu_create();
         // (void)menu_init_list(m_run_chg, 1u, items);
         // menu_set_name(m_run_chg, "Charging");
-        static const char STR_RC0[] PROGMEM = " ";
-        static const menu_context_t RC_ROWS[] PROGMEM = {
-            {STR_RC0, 0}};
-
         menu_init(m_run_chg);
-        (void)menu_set_menu_rows(m_run_chg, sizeof(RC_ROWS) / sizeof(RC_ROWS[0]), RC_ROWS);
+        (void)menu_set_leaf_rows(m_run_chg, sizeof(INA_LEAF_ROWS) / sizeof(INA_LEAF_ROWS[0]), INA_LEAF_ROWS);
         menu_set_name(m_run_chg, PSTR("     -Charging-"));
-        (void)menu_set_soft_keys(m_run_chg, SK_BACK_START);
+        (void)menu_set_soft_keys(m_run_chg, SK_BACK_TOGGLE_CHG);
     }
 
     /* ---------- Battery cycles test (RUN) ---------- */
