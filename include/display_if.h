@@ -30,4 +30,16 @@ void display_println_pgm(PGM_P s);
 void display_newline(void);
 uint8_t display_char_width_px(void);
 
+/* Format a PROGMEM string template with a time value in seconds, replacing %t with the formatted time */
+void display_print_formated_time_pgm(PGM_P template_str, uint16_t total_seconds);
+
+/* Format a PROGMEM string template with a uint16_t value, replacing %i with the value */
+void display_print_formatted_u16_pgm(PGM_P template_str, uint16_t value);
+
+/* Format a PROGMEM string template with a float value, replacing %f, %.1f, %.2f, etc. */
+void display_print_formatted_float_pgm(PGM_P template_str, float value);
+
+/* Smart wrapper: auto-detects %i, %f, or %t and calls the appropriate formatter */
+void display_print_smart_pgm(PGM_P template_str, uint16_t value_u16, float value_float);
+
 #endif /* DISPLAY_IF_H */

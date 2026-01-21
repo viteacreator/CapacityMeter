@@ -539,8 +539,6 @@ static void ui_render_menu(Menu_t *m)
           uint8_t is_edit = (is_selected && menu_is_edit_mode(m)) ? 1u : 0u;
           uint8_t is_editable = menu_leaf_row_is_editable(m, leaf_idx);
           uint16_t val = menu_get_leaf_row_value(m, leaf_idx);
-          char val_buf[8];
-          u16_to_dec(val, val_buf, sizeof(val_buf));
           PGM_P label = menu_get_leaf_row_label(m, leaf_idx);
 
           if (is_selected && is_editable && !is_edit)
@@ -548,10 +546,8 @@ static void ui_render_menu(Menu_t *m)
             display_set_invert(1u);
             if (label)
             {
-              display_print_pgm(label);
+              display_print_smart_pgm(label, val, ((float)val)/1000.0f);
             }
-            display_print(" ");
-            display_print(val_buf);
             display_set_invert(0u);
             display_newline();
           }
@@ -560,18 +556,15 @@ static void ui_render_menu(Menu_t *m)
             display_set_invert(0u);
             if (label)
             {
-              display_print_pgm(label);
+              display_print_smart_pgm(label, val, ((float)val)/1000.0f);
             }
-            display_print(" ");
             if (is_selected && is_editable && is_edit)
             {
+              char val_buf[8];
+              u16_to_dec(val, val_buf, sizeof(val_buf));
               display_set_invert(1u);
               display_print(val_buf);
               display_set_invert(0u);
-            }
-            else
-            {
-              display_print(val_buf);
             }
             display_newline();
           }

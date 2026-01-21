@@ -87,12 +87,45 @@ static uint16_t ui_get_ina_current_ma(void)
     return (uint16_t)cur;
 }
 
-static const char STR_INA_VOLT[] PROGMEM = "U[mV]";
-static const char STR_INA_CURR[] PROGMEM = "I[mA]";
+static const char STR_INA_VOLT[] PROGMEM = "U= %.3fV";
+static const char STR_INA_CURR[] PROGMEM = "I= %.3fA";
+static const char STR_INA_CHG_CURR[] PROGMEM = "I= %.3fA";
+static const char STR_INA_DIS_CURR[] PROGMEM = "I= -%.3fA";
+static const char STR_CHG1_CAP[] PROGMEM = "Charge1:  %i mAh";
+static const char STR_CHG2_CAP[] PROGMEM = "Charge2:  %i mAh";
+static const char STR_DIS_CAP[] PROGMEM = "Dischg:   %i mAh";
+static const char STR_CHG_CAP[] PROGMEM = "Capacity: %i mAh";
+static const char STR_ELAP_TIME[] PROGMEM = "El.time: %t";
+static const char STR_EMPTY[] PROGMEM = "";
+
+uint16_t ui_get_temp_cap(void)
+{
+    return 2123u + random(0, 10);
+}
+uint16_t ui_get_temp_elap_s(void)
+{
+    return 3661u + random(0, 200);
+}
+
+static const leaf_context_t INA_CHG_LEAF_ROWS[] PROGMEM = {
+    {STR_INA_VOLT, ui_get_ina_voltage_mv, 0, 0},
+    {STR_INA_CHG_CURR, ui_get_ina_current_ma, 0, 0},
+    {STR_CHG_CAP, ui_get_temp_cap, 0, 0},
+    {STR_ELAP_TIME, ui_get_temp_elap_s, 0, 0}};
+
+static const leaf_context_t INA_DIS_LEAF_ROWS[] PROGMEM = {
+    {STR_INA_VOLT, ui_get_ina_voltage_mv, 0, 0},
+    {STR_INA_DIS_CURR, ui_get_ina_current_ma, 0, 0},
+    {STR_CHG_CAP, ui_get_temp_cap, 0, 0},
+    {STR_ELAP_TIME, ui_get_temp_elap_s, 0, 0}};
 
 static const leaf_context_t INA_LEAF_ROWS[] PROGMEM = {
     {STR_INA_VOLT, ui_get_ina_voltage_mv, 0, 0},
-    {STR_INA_CURR, ui_get_ina_current_ma, 0, 0}};
+    {STR_INA_CURR, ui_get_ina_current_ma, 0, 0},
+    {STR_CHG1_CAP, ui_get_temp_cap, 0, 0},
+    {STR_DIS_CAP, ui_get_temp_cap, 0, 0},
+    {STR_CHG2_CAP, ui_get_temp_cap, 0, 0},
+    {STR_ELAP_TIME, ui_get_temp_elap_s, 0, 0}};
 
 /* ====== Leaf actions (connect UI -> test engine here) ====== */
 
@@ -253,11 +286,11 @@ void ui_tree_init(void)
         static const char STR_MAIN2[] PROGMEM = "3.Intern resist. test";
         static const char STR_MAIN3[] PROGMEM = "4.View logs files";
 
-static const menu_context_t MAIN_ROWS[] PROGMEM = {
-    {STR_MAIN0, &m_batt_simple_list_obj},
-    {STR_MAIN1, &m_run_cycles_obj},
-    {STR_MAIN2, &m_run_resist_obj},
-    {STR_MAIN3, &m_logs_stub_obj}};
+        static const menu_context_t MAIN_ROWS[] PROGMEM = {
+            {STR_MAIN0, &m_batt_simple_list_obj},
+            {STR_MAIN1, &m_run_cycles_obj},
+            {STR_MAIN2, &m_run_resist_obj},
+            {STR_MAIN3, &m_logs_stub_obj}};
 
         menu_init(m_main);
         (void)menu_set_menu_rows(m_main, sizeof(MAIN_ROWS) / sizeof(MAIN_ROWS[0]), MAIN_ROWS);
@@ -267,17 +300,17 @@ static const menu_context_t MAIN_ROWS[] PROGMEM = {
     /* ---------- Battery simple test (LIST) ---------- */
     {
         static const char STR_BST0[] PROGMEM = "1.Chg-Disch-Chg";
-        static const char STR_BST1[] PROGMEM = "2.Discharging";
-        static const char STR_BST2[] PROGMEM = "3.Charging";
+        static const char STR_BST1[] PROGMEM = "2.Charging";
+        static const char STR_BST2[] PROGMEM = "3.Discharging";
 
         static const menu_context_t BST_ROWS[] PROGMEM = {
             {STR_BST0, &m_run_cdc_obj},
-            {STR_BST1, &m_run_disch_obj},
-            {STR_BST2, &m_run_chg_obj}};
+            {STR_BST1, &m_run_chg_obj},
+            {STR_BST2, &m_run_disch_obj}};
 
         menu_init(m_batt_simple_list);
         (void)menu_set_menu_rows(m_batt_simple_list, sizeof(BST_ROWS) / sizeof(BST_ROWS[0]), BST_ROWS);
-        menu_set_name(m_batt_simple_list, PSTR(" --Btr simple test--"));        
+        menu_set_name(m_batt_simple_list, PSTR(" --Btr simple test--"));
         (void)menu_set_soft_keys(m_batt_simple_list, SK_BACK_ONLY);
     }
 
@@ -314,7 +347,7 @@ static const menu_context_t MAIN_ROWS[] PROGMEM = {
         // (void)menu_init_list(m_run_disch, 1u, items);
         // menu_set_name(m_run_disch, "Discharging");
         menu_init(m_run_disch);
-        (void)menu_set_leaf_rows(m_run_disch, sizeof(INA_LEAF_ROWS) / sizeof(INA_LEAF_ROWS[0]), INA_LEAF_ROWS);
+        (void)menu_set_leaf_rows(m_run_disch, sizeof(INA_DIS_LEAF_ROWS) / sizeof(INA_DIS_LEAF_ROWS[0]), INA_DIS_LEAF_ROWS);
         menu_set_name(m_run_disch, PSTR("    -Discharging-"));
         (void)menu_set_soft_keys(m_run_disch, SK_BACK_TOGGLE_DISCH);
     }
@@ -328,7 +361,7 @@ static const menu_context_t MAIN_ROWS[] PROGMEM = {
         // (void)menu_init_list(m_run_chg, 1u, items);
         // menu_set_name(m_run_chg, "Charging");
         menu_init(m_run_chg);
-        (void)menu_set_leaf_rows(m_run_chg, sizeof(INA_LEAF_ROWS) / sizeof(INA_LEAF_ROWS[0]), INA_LEAF_ROWS);
+        (void)menu_set_leaf_rows(m_run_chg, sizeof(INA_CHG_LEAF_ROWS) / sizeof(INA_CHG_LEAF_ROWS[0]), INA_CHG_LEAF_ROWS);
         menu_set_name(m_run_chg, PSTR("     -Charging-"));
         (void)menu_set_soft_keys(m_run_chg, SK_BACK_TOGGLE_CHG);
     }

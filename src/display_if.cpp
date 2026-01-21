@@ -1,5 +1,6 @@
 #include "display_if.h"
 #include "main.h"
+#include <stdio.h>
 
 // define DISPLAY_BACKEND_U8G2 - in .h file
 
@@ -205,4 +206,250 @@ uint8_t display_char_width_px(void)
 #else
   return 6u;
 #endif
+}
+
+/* Helper function to convert float to string */
+static void format_float_to_string(float value, uint8_t decimals, char *buf, uint8_t buf_size);
+
+/**
+ * this function convert "%t" to a string "12h 34m 56s" format from a time in seconds
+ */
+void display_print_formated_time_pgm(PGM_P template_str, uint16_t total_seconds)
+{
+  if (!template_str)
+    return;
+
+  uint16_t hours = total_seconds / 3600u;
+  uint16_t minutes = (total_seconds % 3600u) / 60u;
+  uint16_t seconds = total_seconds % 60u;
+
+  char val_buf[20]; // to keep the formatted time
+  snprintf(val_buf, sizeof(val_buf), "%uh %um %us", hours, minutes, seconds);
+
+  char ch;
+  uint8_t i = 0u;
+  while ((ch = pgm_read_byte(template_str + i)) != '\0')
+  {
+    if (ch == '%' &&
+        (pgm_read_byte(template_str + i + 1u) == 't'))
+    {
+      /* Found %t placeholder, insert the formatted time */
+      display_print(val_buf);
+      i += 2u;
+    }
+    else
+    {
+      /* Regular character, print it */
+      char buf[2] = {ch, '\0'};
+      display_print(buf);
+      i++;
+    }
+  }
+}
+
+void display_print_formatted_u16_pgm(PGM_P template_str, uint16_t value)
+{
+  if (!template_str)
+    return;
+
+  char val_buf[8]; // to keep the value. 8 is enough for uint16_t
+  snprintf(val_buf, sizeof(val_buf), "%u", value);
+
+  char ch;
+  uint8_t i = 0u;
+  while ((ch = pgm_read_byte(template_str + i)) != '\0')
+  {
+    if (ch == '%' &&
+        (pgm_read_byte(template_str + i + 1u) == 'i'))
+    {
+      /* Found %i placeholder, insert the value */
+      display_print(val_buf);
+      i += 2u;
+    }
+    else
+    {
+      /* Regular character, print it */
+      char buf[2] = {ch, '\0'};
+      display_print(buf);
+      i++;
+    }
+  }
+}
+
+void display_print_formatted_float_pgm(PGM_P template_str, float value)
+{
+  if (!template_str)
+    return;
+
+  char ch;
+  uint8_t i = 0u;
+
+  while ((ch = pgm_read_byte(template_str + i)) != '\0')
+  {
+    if (ch == '%')
+    {
+      /* Check for float format specifiers: %f, %.1f, %.2f, etc. */
+      char next = pgm_read_byte(template_str + i + 1u);
+      uint8_t decimals = 6u; /* Default decimal places */
+
+      if (next == 'f')
+      {
+        /* %f format (default 6 decimal places) */
+        char val_buf[20];
+        format_float_to_string(value, decimals, val_buf, sizeof(val_buf));
+        display_print(val_buf);
+        i += 2u;
+      }
+      else if (next == '.')
+      {
+        /* Check for %.Nf format where N is a digit */
+        char digit_ch = pgm_read_byte(template_str + i + 2u);
+        char f_ch = pgm_read_byte(template_str + i + 3u);
+
+        if (digit_ch >= '0' && digit_ch <= '9' && f_ch == 'f')
+        {
+          /* Found %.Nf format */
+          decimals = (uint8_t)(digit_ch - '0');
+          char val_buf[20];
+          format_float_to_string(value, decimals, val_buf, sizeof(val_buf));
+          display_print(val_buf);
+          i += 4u;
+        }
+        else
+        {
+          /* Not a valid format, print the character as-is */
+          char buf[2] = {ch, '\0'};
+          display_print(buf);
+          i++;
+        }
+      }
+      else
+      {
+        /* Not a float format, print the character as-is */
+        char buf[2] = {ch, '\0'};
+        display_print(buf);
+        i++;
+      }
+    }
+    else
+    {
+      /* Regular character, print it */
+      char buf[2] = {ch, '\0'};
+      display_print(buf);
+      i++;
+    }
+  }
+}
+
+static void format_float_to_string(float value, uint8_t decimals, char *buf, uint8_t buf_size)
+{
+  if (!buf || buf_size < 2)
+    return;
+
+  uint8_t pos = 0u;
+  
+  /* Handle negative numbers */
+  if (value < 0.0f)
+  {
+    if (pos < buf_size - 1)
+      buf[pos++] = '-';
+    value = -value;
+  }
+
+  /* Get integer part */
+  uint32_t int_part = (uint32_t)value;
+  float frac_part = value - (float)int_part;
+
+  /* Convert integer part to string */
+  char int_buf[16];
+  uint8_t int_len = 0u;
+  if (int_part == 0u)
+  {
+    int_buf[int_len++] = '0';
+  }
+  else
+  {
+    uint32_t temp = int_part;
+    while (temp > 0u && int_len < sizeof(int_buf))
+    {
+      int_buf[int_len++] = (char)('0' + (temp % 10u));
+      temp /= 10u;
+    }
+  }
+
+  /* Copy integer part (reversed) */
+  for (uint8_t i = 0u; i < int_len && pos < buf_size - 1; i++)
+  {
+    buf[pos++] = int_buf[int_len - 1u - i];
+  }
+
+  /* Add decimal point if needed */
+  if (decimals > 0u && pos < buf_size - 1)
+  {
+    buf[pos++] = '.';
+  }
+
+  /* Convert fractional part */
+  for (uint8_t i = 0u; i < decimals && pos < buf_size - 1; i++)
+  {
+    frac_part *= 10.0f;
+    uint8_t digit = (uint8_t)frac_part;
+    buf[pos++] = (char)('0' + digit);
+    frac_part -= (float)digit;
+  }
+
+  buf[pos] = '\0';
+}
+
+void display_print_smart_pgm(PGM_P template_str, uint16_t value_u16, float value_float)
+{
+  if (!template_str)
+    return;
+
+  /* Scan the string to detect which format specifier is used */
+  uint8_t i = 0u;
+  char format_type = 0; /* 0=none, 'i'=%i, 'f'=%f, 't'=%t */
+
+  while (pgm_read_byte(template_str + i) != '\0')
+  {
+    char ch = pgm_read_byte(template_str + i);
+    if (ch == '%')
+    {
+      char next = pgm_read_byte(template_str + i + 1u);
+      if (next == 'i')
+      {
+        format_type = 'i';
+        break;
+      }
+      else if (next == 't')
+      {
+        format_type = 't';
+        break;
+      }
+      else if (next == 'f' || next == '.')
+      {
+        format_type = 'f';
+        break;
+      }
+    }
+    i++;
+  }
+
+  /* Call the appropriate formatter based on detected format */
+  switch (format_type)
+  {
+    case 'i':
+      display_print_formatted_u16_pgm(template_str, value_u16);
+      break;
+    case 't':
+      display_print_formated_time_pgm(template_str, value_u16);
+      break;
+    case 'f':
+      display_print_formatted_float_pgm(template_str, value_float);
+      break;
+    default:
+      /* No recognized format, just print the template */
+      display_print_pgm(template_str);
+      break;
+  }
 }
